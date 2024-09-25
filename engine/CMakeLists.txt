@@ -10,6 +10,9 @@ set(H_FILES
 	src/d3dclass.h
 	src/inputclass.h
 	src/systemclass.h
+	src/colorshaderclass.h
+	src/modelclass.h
+	src/cameraclass.h
 )
 
 set(CPP_FILES
@@ -18,17 +21,29 @@ set(CPP_FILES
 	src/d3dclass.cpp
 	src/inputclass.cpp
 	src/systemclass.cpp
+	src/colorshaderclass.cpp
+	src/modelclass.cpp
+	src/cameraclass.cpp
 )
 
-# set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS /ENTRY:wWinMain")
+set(TARGET_NAME
+	engine
+)
 
-add_executable(engine 
+add_executable(${TARGET_NAME} 
 	${H_FILES}
 	${CPP_FILES}
 )
 
-target_link_libraries(engine
+target_link_libraries(${TARGET_NAME}
 	d3d11.lib
 	dxgi.lib
 	d3dcompiler.lib
+)
+
+# it outputs to the correct directory, but it runs from the wrong dir?
+add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+		${CMAKE_SOURCE_DIR}/${TARGET_NAME}/data/shaders $<TARGET_FILE_DIR:${TARGET_NAME}>/data/shaders
+	COMMENT "Copying shaders" VERBATIM
 )
