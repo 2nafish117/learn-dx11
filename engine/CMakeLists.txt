@@ -41,9 +41,14 @@ target_link_libraries(${TARGET_NAME}
 	d3dcompiler.lib
 )
 
-# it outputs to the correct directory, but it runs from the wrong dir?
-add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_directory
-		${CMAKE_SOURCE_DIR}/${TARGET_NAME}/data/shaders $<TARGET_FILE_DIR:${TARGET_NAME}>/data/shaders
+# @TODO: changes to thesse do not trigger a recopy, make fake changes to cpp source to trigger
+add_custom_target(shaders
+	SOURCES 
+	data/shaders/color_ps.hlsl
+	data/shaders/color_vs.hlsl
+)
+
+add_custom_command(TARGET ${TARGET_NAME} POST_BUILD 
+	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/${TARGET_NAME}/data/shaders $<TARGET_FILE_DIR:${TARGET_NAME}>/../data/shaders
 	COMMENT "Copying shaders" VERBATIM
 )
