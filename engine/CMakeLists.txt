@@ -12,7 +12,9 @@ set(H_FILES
 	src/systemclass.h
 	src/colorshaderclass.h
 	src/textureshaderclass.h
+	src/lightshaderclass.h
 	src/modelclass.h
+	src/lightclass.h
 	src/textureclass.h
 	src/cameraclass.h
 )
@@ -25,7 +27,9 @@ set(CPP_FILES
 	src/systemclass.cpp
 	src/colorshaderclass.cpp
 	src/textureshaderclass.cpp
+	src/lightshaderclass.cpp
 	src/modelclass.cpp
+	src/lightclass.cpp
 	src/textureclass.cpp
 	src/cameraclass.cpp
 )
@@ -52,6 +56,8 @@ add_custom_target(shaders
 	data/shaders/color_vs.hlsl
 	data/shaders/texture_ps.hlsl
 	data/shaders/texture_vs.hlsl
+	data/shaders/light_ps.hlsl
+	data/shaders/light_vs.hlsl
 )
 
 add_custom_command(TARGET ${TARGET_NAME} POST_BUILD 
