@@ -7,10 +7,11 @@ ApplicationClass::ApplicationClass()
 	m_Camera = nullptr;
 	m_Model = nullptr;
 	m_ColorShader = nullptr;
+	m_TextureShader = nullptr;
 }
 
 ApplicationClass::ApplicationClass(const ApplicationClass& other)
-	: m_Direct3D(nullptr), m_Camera(nullptr), m_Model(nullptr), m_ColorShader(nullptr)
+	: m_Direct3D(nullptr), m_Camera(nullptr), m_Model(nullptr), m_ColorShader(nullptr), m_TextureShader(nullptr)
 {
 }
 
@@ -38,7 +39,7 @@ bool ApplicationClass::Initialize(int screenWidth, int screenHeight, HWND hwnd)
 	// Create and initialize the model object.
 	m_Model = new ModelClass;
 
-	result = m_Model->Initialize(m_Direct3D->GetDevice());
+	result = m_Model->Initialize(m_Direct3D->GetDevice(), m_Direct3D->GetDeviceContext(), "data/textures/stone01.tga");
 	if(!result)
 	{
 		MessageBoxW(hwnd, L"Could not initialize the model object.", L"Error", MB_OK);
@@ -55,6 +56,15 @@ bool ApplicationClass::Initialize(int screenWidth, int screenHeight, HWND hwnd)
 		return false;
 	}
 
+	m_TextureShader = new TextureShaderClass;
+
+	result = m_TextureShader->Initialize(m_Direct3D->GetDevice(), hwnd);
+	if(!result)
+	{
+		MessageBoxW(hwnd, L"Could not initialize the texture shader object.", L"Error", MB_OK);
+		return false;
+	}
+
 	return true;
 }
 
@@ -67,6 +77,13 @@ void ApplicationClass::Shutdown()
 		m_ColorShader->Shutdown();
 		delete m_ColorShader;
 		m_ColorShader = 0;
+	}
+
+	if (m_TextureShader)
+	{
+		m_TextureShader->Shutdown();
+		delete m_TextureShader;
+		m_TextureShader = 0;
 	}
 
 	// Release the model object.
@@ -131,7 +148,13 @@ bool ApplicationClass::Render()
 	m_Model->Render(m_Direct3D->GetDeviceContext());
 
 	// Render the model using the color shader.
-	result = m_ColorShader->Render(m_Direct3D->GetDeviceContext(), m_Model->GetIndexCount(), worldMatrix, viewMatrix, projectionMatrix);
+	// result = m_ColorShader->Render(m_Direct3D->GetDeviceContext(), m_Model->GetIndexCount(), worldMatrix, viewMatrix, projectionMatrix);
+	// if (!result)
+	// {
+	// 	return false;
+	// }
+
+	result = m_TextureShader->Render(m_Direct3D->GetDeviceContext(), m_Model->GetIndexCount(), worldMatrix, viewMatrix, projectionMatrix, m_Model->GetTexture());
 	if (!result)
 	{
 		return false;

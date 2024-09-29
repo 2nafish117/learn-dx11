@@ -11,7 +11,9 @@ set(H_FILES
 	src/inputclass.h
 	src/systemclass.h
 	src/colorshaderclass.h
+	src/textureshaderclass.h
 	src/modelclass.h
+	src/textureclass.h
 	src/cameraclass.h
 )
 
@@ -22,7 +24,9 @@ set(CPP_FILES
 	src/inputclass.cpp
 	src/systemclass.cpp
 	src/colorshaderclass.cpp
+	src/textureshaderclass.cpp
 	src/modelclass.cpp
+	src/textureclass.cpp
 	src/cameraclass.cpp
 )
 
@@ -46,9 +50,11 @@ add_custom_target(shaders
 	SOURCES 
 	data/shaders/color_ps.hlsl
 	data/shaders/color_vs.hlsl
+	data/shaders/texture_ps.hlsl
+	data/shaders/texture_vs.hlsl
 )
 
 add_custom_command(TARGET ${TARGET_NAME} POST_BUILD 
-	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/${TARGET_NAME}/data/shaders $<TARGET_FILE_DIR:${TARGET_NAME}>/../data/shaders
+	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/${TARGET_NAME}/data $<TARGET_FILE_DIR:${TARGET_NAME}>/../data
 	COMMENT "Copying shaders" VERBATIM
 )
