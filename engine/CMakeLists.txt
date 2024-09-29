@@ -63,4 +63,6 @@ add_custom_target(shaders
 add_custom_command(TARGET ${TARGET_NAME} POST_BUILD 
 	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/${TARGET_NAME}/data $<TARGET_FILE_DIR:${TARGET_NAME}>/../data
 	COMMENT "Copying shaders" VERBATIM
+	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/${TARGET_NAME}/data $<TARGET_FILE_DIR:${TARGET_NAME}>/data
+	COMMENT "Copying shaders" VERBATIM
 )
