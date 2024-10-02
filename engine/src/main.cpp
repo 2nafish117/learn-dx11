@@ -1,23 +1,7 @@
-#include "systemclass.h"
+#include "Application.hpp"
 
-int main(
-	//_In_ HINSTANCE hInstance,
-	//_In_opt_ HINSTANCE hPrevInstance,
-	//_In_ LPWSTR lpCmdLine,
-	//_In_ int nShowCmd
-)
+int main(void)
 {
-	SystemClass* System = new SystemClass();
-
-	bool result = System->Initialize();
-	if(result)
-	{
-		System->Run();
-	}
-
-	System->Shutdown();
-	delete System;
-	System = nullptr;
-
-	return 0;
+	Application app;
+	return app.Run();
 }
