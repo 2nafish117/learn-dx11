@@ -31,8 +31,9 @@ int Application::Run()
         return -1;
 	}
 
+	glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_FALSE);
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwSwapInterval(1);
+    //glfwSwapInterval(1);
 
     m_window = glfwCreateWindow(1280, 720, "Engine", nullptr, nullptr);
 	
@@ -43,15 +44,16 @@ int Application::Run()
         return -1;
     }
 
-	m_renderer = std::make_unique<Renderer>();
+	m_renderer = std::make_unique<Renderer>(m_window);
 
-    glfwMakeContextCurrent(m_window);
+    // glfwMakeContextCurrent(m_window);
 
     while (!glfwWindowShouldClose(m_window))
     {
-        glfwSwapBuffers(m_window);
-
+        // glfwSwapBuffers(m_window);
         glfwPollEvents();
+
+		m_renderer->Render();
     }
 
 	glfwDestroyWindow(m_window);
