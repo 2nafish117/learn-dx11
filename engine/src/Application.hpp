@@ -14,7 +14,12 @@ public:
 	int Run();
 
 private:
-	GLFWwindow* m_window;
+	void OnWindowResize(GLFWwindow* window);
+
+private:
+	GLFWwindow* m_window = nullptr;
 	std::unique_ptr<Renderer> m_renderer;
 
+	// glfw callbacks
+	friend void WindowSizeCallback(GLFWwindow* window, int width, int height);
 };
