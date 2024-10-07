@@ -1,17 +1,19 @@
-struct Input {
-	float3 position: POSITION,
-	float3 color: COLOR
+struct VSInput {
+	float4 position: POSITION;
+	float3 color: COLOR;
 	// float2 uv0: TEXCOORD0,
 };
 
-struct Output {
-	float4 color: COLOR
+struct PSInput {
+	float4 position: SV_POSITION;
+	float4 color: COLOR;
 };
 
-Output SimpleVS(Input input) {
-	Output output;
+PSInput VSMain(VSInput vsInput) {
+	PSInput psInput;
 
-	output.color = input.color;
+	psInput.color = float4(vsInput.color, 1);
+	psInput.position = vsInput.position;
 
-	return output;
+	return psInput;
 }

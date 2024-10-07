@@ -216,7 +216,7 @@ Renderer::Renderer(GLFWwindow* window)
 		DXERROR(res);
 	}
 
-	int indices[] = {
+	u32 indices[] = {
 		0, 1, 2
 	};
 
@@ -239,6 +239,71 @@ Renderer::Renderer(GLFWwindow* window)
 	if (auto res = m_device->CreateBuffer(&indexBufferDesc, &indexBufferInitData, &m_indexBuffer); FAILED(res)) {
 		DXERROR(res);
 	}
+
+	// @TODO: shader defines and includes
+	// D3D_SHADER_MACRO defines = {
+	// 	LPCSTR Name;
+	// 	LPCSTR Definition;
+	// };
+	// I need to implement this interface to actually use it
+	// ComPtr<ID3DInclude> include;
+
+	ComPtr<ID3DBlob> vertexBytecode;
+	{
+		ComPtr<ID3DBlob> errors;
+
+		UINT flags1 = D3DCOMPILE_WARNINGS_ARE_ERRORS | D3DCOMPILE_ENABLE_STRICTNESS;
+		// something to do with fx files???
+		UINT flags2 = 0;
+
+		if(auto res = D3DCompileFromFile(L"data/shaders/simple_vs.hlsl", nullptr, nullptr, "VSMain", "vs_5_0", flags1, flags2, &vertexBytecode, &errors); FAILED(res)) {
+			DXERROR(res);
+			spdlog::error("shader compile error: {}", (const char*)errors->GetBufferPointer());
+		}
+	}
+
+	ComPtr<ID3DBlob> pixelBytecode;
+	{
+		ComPtr<ID3DBlob> errors;
+
+		UINT flags1 = D3DCOMPILE_WARNINGS_ARE_ERRORS | D3DCOMPILE_ENABLE_STRICTNESS;
+		// something to do with fx files???
+		UINT flags2 = 0;
+
+		if (auto res = D3DCompileFromFile(L"data/shaders/simple_ps.hlsl", nullptr, nullptr, "PSMain", "ps_5_0", flags1, flags2, &pixelBytecode, &errors); FAILED(res)) {
+			DXERROR(res);
+			spdlog::error("shader compile error: {}", (const char*)errors->GetBufferPointer());
+		}
+	}
+	
+	m_device->CreateVertexShader(vertexBytecode->GetBufferPointer(), vertexBytecode->GetBufferSize(), nullptr, &m_simpleVertex);
+
+	m_device->CreatePixelShader(pixelBytecode->GetBufferPointer(), pixelBytecode->GetBufferSize(), nullptr, &m_simplePixel);
+
+	D3D11_INPUT_ELEMENT_DESC inputElementDescs[] = {
+		{
+			.SemanticName = "POSITION",
+			.SemanticIndex = 0,
+			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT,
+			.InputSlot = 0,
+			.AlignedByteOffset = 0,
+			.InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
+			.InstanceDataStepRate = 0,
+		}, 
+		{
+			.SemanticName = "COLOR",
+			.SemanticIndex = 0,
+			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT,
+			.InputSlot = 0,
+			.AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT,
+			.InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
+			.InstanceDataStepRate = 0,
+		}
+	};
+
+	ComPtr<ID3D11InputLayout> m_inputLayout;
+	m_device->CreateInputLayout(inputElementDescs, 2, vertexBytecode->GetBufferPointer(), vertexBytecode->GetBufferSize(), &m_inputLayout);
+	m_deviceContext->IASetInputLayout(m_inputLayout.Get());
 
 	//D3D11_INPUT_ELEMENT_DESC CreateInputLayout = {
 	//	LPCSTR SemanticName;
@@ -425,10 +490,16 @@ void Renderer::Render() {
 	m_deviceContext->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
 	// render stuff
-	//m_deviceContext->IASetVertexBuffers(0, 1, &m_vertexBuffer, nullptr, nullptr);
-	//m_deviceContext->IASetIndexBuffer(m_indexBuffer.Get(), DXGI_FORMAT_R32_SINT, 0);
+	UINT strides[] = { sizeof(SimpleVertexCombined) };
+	UINT offsets[] = { 0 };
+	m_deviceContext->IASetVertexBuffers(0, 1, m_vertexBuffer.GetAddressOf(), strides, offsets);
+	m_deviceContext->IASetIndexBuffer(m_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+	m_deviceContext->VSSetShader(m_simpleVertex.Get(), nullptr, 0);
+	m_deviceContext->PSSetShader(m_simplePixel.Get(), nullptr, 0);
 
-	//m_deviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	m_deviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	m_deviceContext->DrawIndexed(3, 0, 0);
 
 	// end render
 	// vsync enabled

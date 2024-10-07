@@ -64,6 +64,9 @@ private:
 	ComPtr<ID3D11Buffer> m_vertexBuffer;
 	ComPtr<ID3D11Buffer> m_indexBuffer;
 
+	ComPtr<ID3D11VertexShader> m_simpleVertex;
+	ComPtr<ID3D11PixelShader> m_simplePixel;
+
 	struct SimpleVertexCombined
 	{
 		DirectX::XMFLOAT3 Pos;
