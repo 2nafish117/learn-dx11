@@ -7,9 +7,10 @@
 
 static void WindowSizeCallback(GLFWwindow* window, int width, int height) {
 	void* user = glfwGetWindowUserPointer(window);
+	assert(user != nullptr);
 	Application* application = (Application*)user;
 
-	//application->OnWindowResize(window);
+	application->OnWindowResize(window);
 }
 
 #pragma endregion
@@ -44,10 +45,10 @@ int Application::Run()
 
 	glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_FALSE);
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	
-	//glfwSetWindowSizeCallback(m_window, WindowSizeCallback);
 
 	m_window = glfwCreateWindow(1280, 720, "Engine", nullptr, nullptr);
+	
+	glfwSetWindowSizeCallback(m_window, WindowSizeCallback);
 	glfwSetWindowUserPointer(m_window, this);
 
 	if (!m_window)
@@ -77,7 +78,7 @@ int Application::Run()
 
 void Application::OnWindowResize(GLFWwindow* window)
 {
-
+	int width, height;
+	glfwGetWindowSize(window, &width, &height);
+	m_renderer->HandleResize(width, height);
 }
-
-

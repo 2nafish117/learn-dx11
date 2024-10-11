@@ -21,6 +21,7 @@ public:
 	virtual ~Renderer();
 
 	void Render();
+	void HandleResize(u32 width, u32 height);
 
 private:
 	void EnumAdapters(std::vector<ComPtr<IDXGIAdapter>>& outAdapters);
@@ -32,7 +33,10 @@ private:
 
 	void CreateSwapchain(GLFWwindow* window, u32 bufferCount);
 
-	//void ObtainBackbuffers
+	// @TODO: factor swapchain params?
+	void ResizeSwapchainResources(u32 width, u32 height);
+	void ObtainSwapchainResources();
+	void ReleaseSwapchainResources();
 
 	ComPtr<IDXGIFactory2> m_factory;
 
@@ -46,7 +50,7 @@ private:
 	ComPtr<ID3D11DeviceContext> m_deviceContext;
 
 	ComPtr<ID3D11RenderTargetView> m_renderTargetView;
-	ComPtr<ID3D11Texture2D> m_depthStencil;
+	ComPtr<ID3D11Texture2D> m_depthStencilTexture;
 	ComPtr<ID3D11DepthStencilView> m_depthStencilView;
 
 	// pipeline states

@@ -58,28 +58,7 @@ Renderer::Renderer(GLFWwindow* window)
 #endif
 
 	CreateSwapchain(m_window, 1);
-
-	ComPtr<ID3D11Texture2D> backBuffer;
-	if (auto res = m_swapchain->GetBuffer(0, IID_PPV_ARGS(&backBuffer)); FAILED(res)) {
-		DXERROR(res);
-	}
-
-	spdlog::info("got back buffer from swapchain");
-
-	D3D11_RENDER_TARGET_VIEW_DESC rtDesc = {
-		.Format = DXGI_FORMAT_R8G8B8A8_UNORM,
-		.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D,
-		.Texture2D = {
-			.MipSlice = 0,
-		}
-	};
-
-	if (auto res = m_device->CreateRenderTargetView(backBuffer.Get(), &rtDesc, &m_renderTargetView); FAILED(res)) {
-		DXERROR(res);
-		return;
-	}
-
-	spdlog::info("created render target view");
+	ObtainSwapchainResources();
 
 	int width, height;
 	glfwGetWindowSize(m_window, &width, &height);
@@ -100,7 +79,7 @@ Renderer::Renderer(GLFWwindow* window)
 		.MiscFlags = 0,
 	};
 
-	if(auto res = m_device->CreateTexture2D(&depthStencilTexDesc, nullptr, &m_depthStencil); FAILED(res)) {
+	if(auto res = m_device->CreateTexture2D(&depthStencilTexDesc, nullptr, &m_depthStencilTexture); FAILED(res)) {
 		_com_error err(res);
 		spdlog::critical("depth stencil texture creation failed with {} ({})", err.ErrorMessage(), res);
 	}
@@ -108,24 +87,24 @@ Renderer::Renderer(GLFWwindow* window)
 	spdlog::info("created depth stencil texture");
 
 	D3D11_DEPTH_STENCIL_DESC depthStencilDesc = {
-	.DepthEnable = true,
-	.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL,
-	.DepthFunc = D3D11_COMPARISON_LESS,
-	.StencilEnable = false,
-	.StencilReadMask = 0,
-	.StencilWriteMask = 0,
-	.FrontFace = {
-		.StencilFailOp = D3D11_STENCIL_OP_KEEP,
-		.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP,
-		.StencilPassOp = D3D11_STENCIL_OP_KEEP,
-		.StencilFunc = D3D11_COMPARISON_EQUAL,
-	},
-	.BackFace = {
-		.StencilFailOp = D3D11_STENCIL_OP_KEEP,
-		.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP,
-		.StencilPassOp = D3D11_STENCIL_OP_KEEP,
-		.StencilFunc = D3D11_COMPARISON_EQUAL,
-	},
+		.DepthEnable = true,
+		.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL,
+		.DepthFunc = D3D11_COMPARISON_LESS,
+		.StencilEnable = false,
+		.StencilReadMask = 0,
+		.StencilWriteMask = 0,
+		.FrontFace = {
+			.StencilFailOp = D3D11_STENCIL_OP_KEEP,
+			.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP,
+			.StencilPassOp = D3D11_STENCIL_OP_KEEP,
+			.StencilFunc = D3D11_COMPARISON_EQUAL,
+		},
+		.BackFace = {
+			.StencilFailOp = D3D11_STENCIL_OP_KEEP,
+			.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP,
+			.StencilPassOp = D3D11_STENCIL_OP_KEEP,
+			.StencilFunc = D3D11_COMPARISON_EQUAL,
+		},
 	};
 
 	if (auto res = m_device->CreateDepthStencilState(&depthStencilDesc, &m_depthStencilState); FAILED(res)) {
@@ -145,7 +124,7 @@ Renderer::Renderer(GLFWwindow* window)
 		}
 	};
 	
-	if(auto res = m_device->CreateDepthStencilView(m_depthStencil.Get(), &depthStencilViewDesc, &m_depthStencilView); FAILED(res)) {
+	if(auto res = m_device->CreateDepthStencilView(m_depthStencilTexture.Get(), &depthStencilViewDesc, &m_depthStencilView); FAILED(res)) {
 		spdlog::critical("depth stencil view creation failed with {}", res);
 	}
 
@@ -174,8 +153,8 @@ Renderer::Renderer(GLFWwindow* window)
 	m_viewport = {
 		.TopLeftX = 0.0f,
 		.TopLeftY = 0.0f,
-		.Width = (float)width,
-		.Height = (float)height,
+		.Width = static_cast<float>(width),
+		.Height = static_cast<float>(height),
 		.MinDepth = 0.0f,
 		.MaxDepth = 1.0f,
 	};
@@ -483,9 +462,52 @@ void Renderer::CreateSwapchain(GLFWwindow* window, u32 bufferCount) {
 	spdlog::info("created swapchain");
 }
 
+void Renderer::ObtainSwapchainResources() {
+	ComPtr<ID3D11Texture2D> backBuffer;
+	if (auto res = m_swapchain->GetBuffer(0, IID_PPV_ARGS(&backBuffer)); FAILED(res)) {
+		DXERROR(res);
+	}
+
+	spdlog::info("obtained buffer from swapchain");
+
+	D3D11_RENDER_TARGET_VIEW_DESC rtDesc = {
+		.Format = DXGI_FORMAT_R8G8B8A8_UNORM,
+		.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D,
+		.Texture2D = {
+			.MipSlice = 0,
+		}
+	};
+
+	if (auto res = m_device->CreateRenderTargetView(backBuffer.Get(), &rtDesc, &m_renderTargetView); FAILED(res)) {
+		DXERROR(res);
+		return;
+	}
+
+	spdlog::info("created render target view");
+}
+
+void Renderer::ReleaseSwapchainResources() {
+	m_renderTargetView.Reset();
+	spdlog::info("release swapchain resources");
+}
+
+void Renderer::ResizeSwapchainResources(u32 width, u32 height) {
+	m_deviceContext->Flush();
+	ReleaseSwapchainResources();
+
+	if(auto res = m_swapchain->ResizeBuffers(1, width, height, DXGI_FORMAT::DXGI_FORMAT_UNKNOWN, 0); FAILED(res)) {
+		DXERROR(res);
+	}
+
+	spdlog::info("resized swapchain buffers");
+
+	ObtainSwapchainResources();
+}
+
 void Renderer::Render() {
+
 	// begin render
-	const float clearColor[4] = {0.5f, 0.1f, 0.1f, 1.0f};
+	const float clearColor[4] = {0.1f, 0.1f, 0.1f, 1.0f};
 	m_deviceContext->ClearRenderTargetView(m_renderTargetView.Get(), clearColor);
 	m_deviceContext->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
@@ -496,8 +518,9 @@ void Renderer::Render() {
 	m_deviceContext->IASetIndexBuffer(m_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 	m_deviceContext->VSSetShader(m_simpleVertex.Get(), nullptr, 0);
 	m_deviceContext->PSSetShader(m_simplePixel.Get(), nullptr, 0);
-
 	m_deviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	m_deviceContext->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), m_depthStencilView.Get());
 
 	m_deviceContext->DrawIndexed(3, 0, 0);
 
@@ -505,4 +528,14 @@ void Renderer::Render() {
 	// vsync enabled
 	m_swapchain->Present(0, 0);
 	//spdlog::info("rendering");
+}
+
+void Renderer::HandleResize(u32 width, u32 height)
+{
+	ResizeSwapchainResources(width, height);
+
+
+	//m_depthStencilView.Reset();
+	//m_depthStencilTexture.Reset();
+	//m_device->CreateTexture2D()
 }
