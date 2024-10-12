@@ -23,3 +23,6 @@ add_subdirectory(spdlog-1.14.1)
 set(TINYGLTF_HEADER_ONLY ON CACHE INTERNAL "" FORCE)
 set(TINYGLTF_INSTALL OFF CACHE INTERNAL "" FORCE)
 add_subdirectory(tinygltf-2.9.3)
+
+# stb stuff
+add_subdirectory(stb)

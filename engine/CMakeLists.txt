@@ -35,6 +35,7 @@ target_link_libraries(${TARGET_NAME}
 	glfw
 	gb
 	spdlog
+	stb
 	tinygltf
 )
 

@@ -6,6 +6,7 @@
 #include <d3dcompiler.h>
 #include <directxmath.h>
 #include <limits>
+#include <stb/stb_image.h>
 
 #include "Basic.hpp"
 
@@ -64,6 +65,7 @@ private:
 	DirectX::XMMATRIX m_worldToView = {};
 	DirectX::XMMATRIX m_viewToProjection = {};
 
+
 	// @TODO move these to a model class
 	ComPtr<ID3D11Buffer> m_vertexBuffer;
 	ComPtr<ID3D11Buffer> m_indexBuffer;
@@ -71,10 +73,14 @@ private:
 	ComPtr<ID3D11VertexShader> m_simpleVertex;
 	ComPtr<ID3D11PixelShader> m_simplePixel;
 
+	ComPtr<ID3D11ShaderResourceView> m_testSRV;
+	ComPtr<ID3D11SamplerState> m_testSamplerState;
+
 	struct SimpleVertexCombined
 	{
 		DirectX::XMFLOAT3 Pos;
 		DirectX::XMFLOAT3 Col;
+		DirectX::XMFLOAT2 UV0;
 	};
 
 	GLFWwindow* m_window = nullptr;

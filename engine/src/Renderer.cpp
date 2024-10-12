@@ -168,15 +168,26 @@ Renderer::Renderer(GLFWwindow* window)
 	float aspect = (float)width / (float)height;
 	m_viewToProjection = DirectX::XMMatrixPerspectiveFovLH(fov, aspect, 0.1f, 100.f);
 
+	// triangle
+	//SimpleVertexCombined verticesCombo[] =
+	//{
+	//	SimpleVertexCombined{ DirectX::XMFLOAT3(0.0f, 0.5f, 0.5f), DirectX::XMFLOAT3(0.0f, 0.0f, 0.5f), DirectX::XMFLOAT2(0.0f, 0.5f) },
+	//	SimpleVertexCombined{ DirectX::XMFLOAT3(0.5f, -0.5f, 0.5f), DirectX::XMFLOAT3(0.5f, 0.0f, 0.0f), DirectX::XMFLOAT2(0.5f, -0.5f) },
+	//	SimpleVertexCombined{ DirectX::XMFLOAT3(-0.5f, -0.5f, 0.5f), DirectX::XMFLOAT3(0.0f, 0.5f, 0.0f), DirectX::XMFLOAT2(-0.5f, -0.5f) },
+	//};
+
+	// quad
 	SimpleVertexCombined verticesCombo[] =
 	{
-		SimpleVertexCombined{ DirectX::XMFLOAT3(0.0f, 0.5f, 0.5f), DirectX::XMFLOAT3(0.0f, 0.0f, 0.5f) },
-		SimpleVertexCombined{ DirectX::XMFLOAT3(0.5f, -0.5f, 0.5f), DirectX::XMFLOAT3(0.5f, 0.0f, 0.0f) },
-		SimpleVertexCombined{ DirectX::XMFLOAT3(-0.5f, -0.5f, 0.5f), DirectX::XMFLOAT3(0.0f, 0.5f, 0.0f) },
+		SimpleVertexCombined{ DirectX::XMFLOAT3(-0.5f, -0.5f, 0.5f), DirectX::XMFLOAT3(0.0f, 0.5f, 0.0f), DirectX::XMFLOAT2(0.0f, 1.0f) },
+		SimpleVertexCombined{ DirectX::XMFLOAT3(0.5f, 0.5f, 0.5f), DirectX::XMFLOAT3(0.0f, 0.0f, 0.5f), DirectX::XMFLOAT2(1.0f, 0.0f) },
+		SimpleVertexCombined{ DirectX::XMFLOAT3(0.5f, -0.5f, 0.5f), DirectX::XMFLOAT3(0.0f, 0.0f, 0.5f), DirectX::XMFLOAT2(1.0f, 1.0f) },
+		SimpleVertexCombined{ DirectX::XMFLOAT3(-0.5f, 0.5f, 0.5f), DirectX::XMFLOAT3(0.5f, 0.0f, 0.0f), DirectX::XMFLOAT2(0.0f, 0.0f) },
 	};
 
+
 	D3D11_BUFFER_DESC vertBufferDesc = {
-		.ByteWidth = sizeof(SimpleVertexCombined) * 3,
+		.ByteWidth = sizeof(SimpleVertexCombined) * ARRAYSIZE(verticesCombo),
 		.Usage = D3D11_USAGE_DEFAULT,
 		.BindFlags = D3D11_BIND_VERTEX_BUFFER,
 		.CPUAccessFlags = 0,
@@ -195,12 +206,19 @@ Renderer::Renderer(GLFWwindow* window)
 		DXERROR(res);
 	}
 
+	// triangle
+	//u32 indices[] = {
+	//	0, 1, 2
+	//};
+
+	// quad
 	u32 indices[] = {
-		0, 1, 2
+		0, 1, 2,
+		0, 3, 1
 	};
 
 	D3D11_BUFFER_DESC indexBufferDesc = {
-		.ByteWidth = sizeof(int) * 3,
+		.ByteWidth = sizeof(int) * ARRAYSIZE(indices),
 		.Usage = D3D11_USAGE_DEFAULT,
 		.BindFlags = D3D11_BIND_INDEX_BUFFER,
 		.CPUAccessFlags = 0,
@@ -277,27 +295,93 @@ Renderer::Renderer(GLFWwindow* window)
 			.AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT,
 			.InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
 			.InstanceDataStepRate = 0,
+		},
+		{
+			.SemanticName = "TEXCOORD",
+			.SemanticIndex = 0,
+			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32_FLOAT,
+			.InputSlot = 0,
+			.AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT,
+			.InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
+			.InstanceDataStepRate = 0,
 		}
 	};
 
 	ComPtr<ID3D11InputLayout> m_inputLayout;
-	m_device->CreateInputLayout(inputElementDescs, 2, vertexBytecode->GetBufferPointer(), vertexBytecode->GetBufferSize(), &m_inputLayout);
+	m_device->CreateInputLayout(inputElementDescs, ARRAYSIZE(inputElementDescs), vertexBytecode->GetBufferPointer(), vertexBytecode->GetBufferSize(), &m_inputLayout);
 	m_deviceContext->IASetInputLayout(m_inputLayout.Get());
 
-	//D3D11_INPUT_ELEMENT_DESC CreateInputLayout = {
-	//	LPCSTR SemanticName;
-	//	UINT SemanticIndex;
-	//	DXGI_FORMAT Format;
-	//	UINT InputSlot;
-	//	UINT AlignedByteOffset;
-	//	D3D11_INPUT_CLASSIFICATION InputSlotClass;
-	//	UINT InstanceDataStepRate;
-	//};
-	// m_device->CreateInputLayout(&inputElementDesc, 3, )
+	int texture_width = 0;
+	int texture_height = 0;
+	int channels = 0;
+	stbi_uc* data = stbi_load("data/textures/placeholder.png", &texture_width, &texture_height, &channels, 4);
+
+	ComPtr<ID3D11Texture2D> m_testTexture;
+
+	D3D11_TEXTURE2D_DESC testTextureDesc = {
+		.Width = static_cast<UINT>(texture_width),
+		.Height = static_cast<UINT>(texture_height),
+		// @TODO: 1 for multisampled???
+		.MipLevels = 1,
+		.ArraySize = 1,
+		.Format = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM,
+		.SampleDesc = {
+			.Count = 1,
+			.Quality = 0,
+		},
+		.Usage = D3D11_USAGE::D3D11_USAGE_IMMUTABLE,
+		.BindFlags = D3D11_BIND_FLAG::D3D11_BIND_SHADER_RESOURCE,
+		.CPUAccessFlags = 0,
+	};
+
+	D3D11_SUBRESOURCE_DATA testSubresourceData = {
+		.pSysMem = data,
+		.SysMemPitch = (u32)texture_width * channels * sizeof(byte),
+		.SysMemSlicePitch = 0,
+	};
+
+	if(auto res = m_device->CreateTexture2D(&testTextureDesc, &testSubresourceData, &m_testTexture); FAILED(res)) {
+		DXERROR(res);
+	}
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC testTextureSRVDesc = {
+		.Format = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM,
+    	.ViewDimension = D3D11_SRV_DIMENSION::D3D11_SRV_DIMENSION_TEXTURE2D,
+		.Texture2D = {
+			.MostDetailedMip = 0,
+    		.MipLevels = static_cast<UINT>(-1),
+		}
+	};
+
+	if(auto res = m_device->CreateShaderResourceView(m_testTexture.Get(), &testTextureSRVDesc, &m_testSRV); FAILED(res)) {
+		DXERROR(res);
+	}
+
+	D3D11_SAMPLER_DESC testSamplerStateDesc = {
+		.Filter = D3D11_FILTER::D3D11_FILTER_MIN_MAG_MIP_LINEAR,
+		.AddressU = D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_WRAP,
+		.AddressV = D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_WRAP,
+		.AddressW = D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_WRAP,
+		.MipLODBias = 0.0f,
+		.MaxAnisotropy = 1,
+		.ComparisonFunc = D3D11_COMPARISON_FUNC::D3D11_COMPARISON_NEVER,
+		.BorderColor = {0, 0, 0, 0},
+		.MinLOD = 0.0f,
+		.MaxLOD = D3D11_FLOAT32_MAX,
+	};
+
+	if(auto res = m_device->CreateSamplerState(&testSamplerStateDesc, &m_testSamplerState); FAILED(res)) {
+		DXERROR(res);
+	}
 }
 
 Renderer::~Renderer()
 {
+#ifdef _DEBUG
+	if (auto res = m_debug->ReportLiveDeviceObjects(D3D11_RLDO_FLAGS::D3D11_RLDO_DETAIL); FAILED(res)) {
+		DXERROR(res);
+	}
+#endif
 }
 
 void Renderer::EnumAdapters(std::vector<ComPtr<IDXGIAdapter>>& outAdapters) {
@@ -516,13 +600,18 @@ void Renderer::Render() {
 	UINT offsets[] = { 0 };
 	m_deviceContext->IASetVertexBuffers(0, 1, m_vertexBuffer.GetAddressOf(), strides, offsets);
 	m_deviceContext->IASetIndexBuffer(m_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+	
 	m_deviceContext->VSSetShader(m_simpleVertex.Get(), nullptr, 0);
 	m_deviceContext->PSSetShader(m_simplePixel.Get(), nullptr, 0);
+
+	m_deviceContext->PSSetShaderResources(0, 1, m_testSRV.GetAddressOf());
+	m_deviceContext->PSSetSamplers(0, 1, m_testSamplerState.GetAddressOf());
+	
 	m_deviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	m_deviceContext->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), m_depthStencilView.Get());
 
-	m_deviceContext->DrawIndexed(3, 0, 0);
+	m_deviceContext->DrawIndexed(6, 0, 0);
 
 	// end render
 	// vsync enabled
