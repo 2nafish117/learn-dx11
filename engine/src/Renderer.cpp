@@ -623,6 +623,7 @@ void Renderer::Render() {
 	m_deviceContext->ClearRenderTargetView(m_renderTargetView.Get(), clearColor);
 	m_deviceContext->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
+
 	double time = glfwGetTime();
 	double angle = DirectX::XMScalarSin(time);
 	double moveX = 0.5 * DirectX::XMScalarSin(time * 2);

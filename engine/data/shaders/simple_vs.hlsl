@@ -7,7 +7,7 @@ struct VSInput {
 
 struct PSInput {
 	float4 position: SV_POSITION;
-	float4 ws_position: POSITION;
+	float3 ws_position: POSITION;
 	float3 ws_normal: NORMAL;
 	float3 color: COLOR;
 	float2 uv0: TEXCOORD0;
@@ -29,9 +29,10 @@ PSInput VSMain(VSInput vsInput) {
 	psInput.position = mul(psInput.position, worldToView);
 	psInput.position = mul(psInput.position, viewToProjection);
 
-	psInput.ws_position = vsInput.position;
-	psInput.ws_position = mul(psInput.ws_position, modelToWorld);
-	
+	float4 ws_pos = vsInput.position;
+	ws_pos = mul(ws_pos, modelToWorld);
+	psInput.ws_position = ws_pos.xyz;
+
 	psInput.ws_normal = vsInput.normal;
 	// @TODO: use normal scaling if scaling non uniformly
 	// see https://learnopengl.com/Lighting/Basic-Lighting
