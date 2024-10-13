@@ -406,6 +406,9 @@ Renderer::Renderer(GLFWwindow* window)
 Renderer::~Renderer()
 {
 #ifdef _DEBUG
+	// @TODO: this is kinda stupid because the lifetimes of the dx objects are tied to the lifetimes of the renderer
+	// and running this at in the destructor of renderer means they havent been destroyed yet
+	// so it will report that all objects are still alive, where should i run this then? pull it out of the renderer?
 	if (auto res = m_debug->ReportLiveDeviceObjects(D3D11_RLDO_FLAGS::D3D11_RLDO_DETAIL); FAILED(res)) {
 		DXERROR(res);
 	}
@@ -539,6 +542,10 @@ void Renderer::CreateDeviceAndContext(UINT createFlags) {
 
 	assert(supportedFeatureLevel == D3D_FEATURE_LEVEL_11_0);
 	spdlog::info("created device and device context");
+
+#if _DEBUG
+	m_device->QueryInterface(IID_PPV_ARGS(&m_debugInfoQueue));
+#endif
 }
 
 void Renderer::CreateSwapchain(GLFWwindow* window, u32 bufferCount) {
@@ -623,7 +630,6 @@ void Renderer::Render() {
 	m_deviceContext->ClearRenderTargetView(m_renderTargetView.Get(), clearColor);
 	m_deviceContext->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-
 	double time = glfwGetTime();
 	double angle = DirectX::XMScalarSin(time);
 	double moveX = 0.5 * DirectX::XMScalarSin(time * 2);
@@ -685,6 +691,8 @@ void Renderer::Render() {
 	// vsync enabled
 	m_swapchain->Present(0, 0);
 	//spdlog::info("rendering");
+
+	GetInfo();
 }
 
 void Renderer::HandleResize(u32 width, u32 height)
@@ -695,4 +703,25 @@ void Renderer::HandleResize(u32 width, u32 height)
 	//m_depthStencilView.Reset();
 	//m_depthStencilTexture.Reset();
 	//m_device->CreateTexture2D()
+}
+
+void Renderer::GetInfo()
+{
+	UINT64 numMessages = m_debugInfoQueue->GetNumStoredMessages();
+
+	for (int i = 0; i < numMessages; ++i) {
+		SIZE_T messageSize = 0;
+		m_debugInfoQueue->GetMessageA(i, nullptr, &messageSize);
+
+		// @TODO: use scratch memory / allocators
+		D3D11_MESSAGE* message = (D3D11_MESSAGE*)malloc(messageSize);
+		m_debugInfoQueue->GetMessageA(i, message, &messageSize);
+
+
+		spdlog::info("{}", message->pDescription);
+
+		free(message);
+	}
+
+	m_debugInfoQueue->ClearStoredMessages();
 }

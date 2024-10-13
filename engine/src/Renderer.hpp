@@ -39,6 +39,8 @@ private:
 	void ObtainSwapchainResources();
 	void ReleaseSwapchainResources();
 
+	void GetInfo();
+
 	ComPtr<IDXGIFactory2> m_factory;
 
 	ComPtr<IDXGIAdapter> m_selectedAdapter;
@@ -46,7 +48,11 @@ private:
 	ComPtr<IDXGISwapChain1> m_swapchain;
 
 	// @TODO: use the debug interface
+#if _DEBUG
 	ComPtr<ID3D11Debug> m_debug;
+	ComPtr<ID3D11InfoQueue> m_debugInfoQueue;
+#endif
+
 	ComPtr<ID3D11Device> m_device;
 	ComPtr<ID3D11DeviceContext> m_deviceContext;
 
