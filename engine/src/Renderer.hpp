@@ -60,12 +60,6 @@ private:
 
 	D3D11_VIEWPORT m_viewport = {};
 
-	// @TODO: temporary, move these into a camera class
-	DirectX::XMMATRIX m_modelToWorld = {};
-	DirectX::XMMATRIX m_worldToView = {};
-	DirectX::XMMATRIX m_viewToProjection = {};
-
-
 	// @TODO move these to a model class
 	ComPtr<ID3D11Buffer> m_vertexBuffer;
 	ComPtr<ID3D11Buffer> m_indexBuffer;
@@ -76,11 +70,29 @@ private:
 	ComPtr<ID3D11ShaderResourceView> m_testSRV;
 	ComPtr<ID3D11SamplerState> m_testSamplerState;
 
+	ComPtr<ID3D11Buffer> m_matrixBuffer;
+
+	ComPtr<ID3D11Buffer> m_pointLightBuffer;
+
 	struct SimpleVertexCombined
 	{
 		DirectX::XMFLOAT3 Pos;
+		DirectX::XMFLOAT3 Normal;
 		DirectX::XMFLOAT3 Col;
 		DirectX::XMFLOAT2 UV0;
+	};
+
+	struct MatrixBuffer {
+		DirectX::XMMATRIX ModelToWorld;
+		DirectX::XMMATRIX WorldToView;
+		DirectX::XMMATRIX ViewToProjection;
+	};
+
+	struct PointLightBuffer {
+		DirectX::XMFLOAT3 Pos;
+		DirectX::XMFLOAT3 Col;
+
+		byte _padding[8];
 	};
 
 	GLFWwindow* m_window = nullptr;

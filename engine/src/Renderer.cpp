@@ -161,13 +161,6 @@ Renderer::Renderer(GLFWwindow* window)
 
 	m_deviceContext->RSSetViewports(1, &m_viewport);
 
-	m_modelToWorld = DirectX::XMMatrixIdentity();
-	m_worldToView = DirectX::XMMatrixTranslation(0.0f, 0.0f, -10.0f);
-
-	float fov = DirectX::XMConvertToRadians(80);
-	float aspect = (float)width / (float)height;
-	m_viewToProjection = DirectX::XMMatrixPerspectiveFovLH(fov, aspect, 0.1f, 100.f);
-
 	// triangle
 	//SimpleVertexCombined verticesCombo[] =
 	//{
@@ -179,10 +172,10 @@ Renderer::Renderer(GLFWwindow* window)
 	// quad
 	SimpleVertexCombined verticesCombo[] =
 	{
-		SimpleVertexCombined{ DirectX::XMFLOAT3(-0.5f, -0.5f, 0.5f), DirectX::XMFLOAT3(0.0f, 0.5f, 0.0f), DirectX::XMFLOAT2(0.0f, 1.0f) },
-		SimpleVertexCombined{ DirectX::XMFLOAT3(0.5f, 0.5f, 0.5f), DirectX::XMFLOAT3(0.0f, 0.0f, 0.5f), DirectX::XMFLOAT2(1.0f, 0.0f) },
-		SimpleVertexCombined{ DirectX::XMFLOAT3(0.5f, -0.5f, 0.5f), DirectX::XMFLOAT3(0.0f, 0.0f, 0.5f), DirectX::XMFLOAT2(1.0f, 1.0f) },
-		SimpleVertexCombined{ DirectX::XMFLOAT3(-0.5f, 0.5f, 0.5f), DirectX::XMFLOAT3(0.5f, 0.0f, 0.0f), DirectX::XMFLOAT2(0.0f, 0.0f) },
+		SimpleVertexCombined{ DirectX::XMFLOAT3(-0.5f, -0.5f, 0.5f), DirectX::XMFLOAT3(0.0f, 0.0f, -1.0f), DirectX::XMFLOAT3(0.0f, 0.5f, 0.0f), DirectX::XMFLOAT2(0.0f, 1.0f) },
+		SimpleVertexCombined{ DirectX::XMFLOAT3(0.5f, 0.5f, 0.5f), DirectX::XMFLOAT3(0.0f, 0.0f, -1.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 0.5f), DirectX::XMFLOAT2(1.0f, 0.0f) },
+		SimpleVertexCombined{ DirectX::XMFLOAT3(0.5f, -0.5f, 0.5f), DirectX::XMFLOAT3(0.0f, 0.0f, -1.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 0.5f), DirectX::XMFLOAT2(1.0f, 1.0f) },
+		SimpleVertexCombined{ DirectX::XMFLOAT3(-0.5f, 0.5f, 0.5f), DirectX::XMFLOAT3(0.0f, 0.0f, -1.0f), DirectX::XMFLOAT3(0.5f, 0.0f, 0.0f), DirectX::XMFLOAT2(0.0f, 0.0f) },
 	};
 
 
@@ -272,7 +265,7 @@ Renderer::Renderer(GLFWwindow* window)
 			spdlog::error("shader compile error: {}", (const char*)errors->GetBufferPointer());
 		}
 	}
-	
+
 	m_device->CreateVertexShader(vertexBytecode->GetBufferPointer(), vertexBytecode->GetBufferSize(), nullptr, &m_simpleVertex);
 
 	m_device->CreatePixelShader(pixelBytecode->GetBufferPointer(), pixelBytecode->GetBufferSize(), nullptr, &m_simplePixel);
@@ -286,7 +279,16 @@ Renderer::Renderer(GLFWwindow* window)
 			.AlignedByteOffset = 0,
 			.InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
 			.InstanceDataStepRate = 0,
-		}, 
+		},
+		{
+			.SemanticName = "NORMAL",
+			.SemanticIndex = 0,
+			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT,
+			.InputSlot = 0,
+			.AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT,
+			.InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
+			.InstanceDataStepRate = 0,
+		},
 		{
 			.SemanticName = "COLOR",
 			.SemanticIndex = 0,
@@ -371,6 +373,32 @@ Renderer::Renderer(GLFWwindow* window)
 	};
 
 	if(auto res = m_device->CreateSamplerState(&testSamplerStateDesc, &m_testSamplerState); FAILED(res)) {
+		DXERROR(res);
+	}
+
+	D3D11_BUFFER_DESC matrixBufferDesc = {
+		.ByteWidth = sizeof(MatrixBuffer),
+		.Usage = D3D11_USAGE::D3D11_USAGE_DYNAMIC,
+		.BindFlags = D3D11_BIND_CONSTANT_BUFFER,
+		.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
+		.MiscFlags = 0,
+		.StructureByteStride = 0,
+	};
+	
+	if (auto res = m_device->CreateBuffer(&matrixBufferDesc, nullptr, &m_matrixBuffer); FAILED(res)) {
+		DXERROR(res);
+	}
+
+	D3D11_BUFFER_DESC pointLightBufferDesc = {
+		.ByteWidth = sizeof(PointLightBuffer),
+		.Usage = D3D11_USAGE::D3D11_USAGE_DYNAMIC,
+		.BindFlags = D3D11_BIND_CONSTANT_BUFFER,
+		.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
+		.MiscFlags = 0,
+		.StructureByteStride = 0,
+	};
+	
+	if (auto res = m_device->CreateBuffer(&pointLightBufferDesc, nullptr, &m_pointLightBuffer); FAILED(res)) {
 		DXERROR(res);
 	}
 }
@@ -595,19 +623,58 @@ void Renderer::Render() {
 	m_deviceContext->ClearRenderTargetView(m_renderTargetView.Get(), clearColor);
 	m_deviceContext->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
+	double time = glfwGetTime();
+	double angle = DirectX::XMScalarSin(time);
+	double moveX = 0.5 * DirectX::XMScalarSin(time * 2);
+	double moveY = 0.5 * DirectX::XMScalarSin(time * 2);
+	auto rotMatrix = DirectX::XMMatrixRotationY(angle);
+	//auto rotMatrix = DirectX::XMMatrixTranslation(angle, 0, 0);
+	//auto rotMatrix = DirectX::XMMatrixIdentity();
+
+	// @TODO: camera class
+	float fov = DirectX::XMConvertToRadians(80);
+	float aspect = (float)16.0 / (float)9.0;
+
+	auto transMatrix = DirectX::XMMatrixTranslation(moveX, moveY, 0);
+
+	DirectX::XMMATRIX modelToWorld = DirectX::XMMatrixIdentity();
+	modelToWorld = modelToWorld * rotMatrix;
+	modelToWorld = modelToWorld * transMatrix;
+
+	// worl to view is the inverse of the model to world matrix of the camera
+	DirectX::XMMATRIX worldToView = DirectX::XMMatrixInverse(nullptr, DirectX::XMMatrixTranslation(0, 0, -1));
+	DirectX::XMMATRIX viewToProjection = DirectX::XMMatrixPerspectiveFovLH(fov, aspect, 0.1f, 100.0f);
+
+	D3D11_MAPPED_SUBRESOURCE subresource;
+	m_deviceContext->Map(m_matrixBuffer.Get(), 0, D3D11_MAP::D3D11_MAP_WRITE_DISCARD, 0, &subresource);
+	MatrixBuffer* data = reinterpret_cast<MatrixBuffer*>(subresource.pData);
+	data->ModelToWorld = DirectX::XMMatrixTranspose(modelToWorld);
+	data->WorldToView = DirectX::XMMatrixTranspose(worldToView);
+	data->ViewToProjection = DirectX::XMMatrixTranspose(viewToProjection);
+	m_deviceContext->Unmap(m_matrixBuffer.Get(), 0);
+
+	D3D11_MAPPED_SUBRESOURCE pointSubresource;
+	m_deviceContext->Map(m_pointLightBuffer.Get(), 0, D3D11_MAP::D3D11_MAP_WRITE_DISCARD, 0, &pointSubresource);
+	PointLightBuffer* plBuffer = reinterpret_cast<PointLightBuffer*>(pointSubresource.pData);
+	plBuffer->Pos = DirectX::XMFLOAT3(0.0, 0.0f, 0);
+	plBuffer->Col = DirectX::XMFLOAT3(1.0, 1.0, 1.0);
+	m_deviceContext->Unmap(m_pointLightBuffer.Get(), 0);
+
 	// render stuff
 	UINT strides[] = { sizeof(SimpleVertexCombined) };
 	UINT offsets[] = { 0 };
 	m_deviceContext->IASetVertexBuffers(0, 1, m_vertexBuffer.GetAddressOf(), strides, offsets);
 	m_deviceContext->IASetIndexBuffer(m_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+	m_deviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	
 	m_deviceContext->VSSetShader(m_simpleVertex.Get(), nullptr, 0);
-	m_deviceContext->PSSetShader(m_simplePixel.Get(), nullptr, 0);
+	m_deviceContext->VSSetConstantBuffers(0, 1, m_matrixBuffer.GetAddressOf());
 
+	m_deviceContext->PSSetShader(m_simplePixel.Get(), nullptr, 0);
 	m_deviceContext->PSSetShaderResources(0, 1, m_testSRV.GetAddressOf());
 	m_deviceContext->PSSetSamplers(0, 1, m_testSamplerState.GetAddressOf());
-	
-	m_deviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	m_deviceContext->PSSetConstantBuffers(0, 1, m_pointLightBuffer.GetAddressOf());
+	m_deviceContext->PSSetConstantBuffers(1, 1, m_matrixBuffer.GetAddressOf());
 
 	m_deviceContext->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), m_depthStencilView.Get());
 
