@@ -707,6 +707,20 @@ void Renderer::HandleResize(u32 width, u32 height)
 
 void Renderer::GetInfo()
 {
+	static const char* messageCategoryStrings[] = {
+		"APPLICATION_DEFINED",
+        "MISCELLANEOUS",
+        "INITIALIZATION",
+        "CLEANUP",
+        "COMPILATION",
+        "STATE_CREATION",
+        "STATE_SETTING",
+        "STATE_GETTING",
+        "RESOURCE_MANIPULATION",
+        "EXECUTION",
+        "SHADER"
+	};
+
 	UINT64 numMessages = m_debugInfoQueue->GetNumStoredMessages();
 
 	for (int i = 0; i < numMessages; ++i) {
@@ -717,6 +731,11 @@ void Renderer::GetInfo()
 		D3D11_MESSAGE* message = (D3D11_MESSAGE*)malloc(messageSize);
 		m_debugInfoQueue->GetMessageA(i, message, &messageSize);
 
+		D3D11_MESSAGE_CATEGORY Category;
+		D3D11_MESSAGE_SEVERITY Severity;
+		D3D11_MESSAGE_ID ID;  
+		const char *pDescription;
+		SIZE_T DescriptionByteLength;
 
 		spdlog::info("{}", message->pDescription);
 
