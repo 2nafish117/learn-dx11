@@ -9,6 +9,7 @@
 #include <stb/stb_image.h>
 
 #include "Basic.hpp"
+#include "RendererUtils.hpp"
 
 struct GLFWwindow;
 
@@ -23,6 +24,15 @@ public:
 
 	void Render();
 	void HandleResize(u32 width, u32 height);
+
+	ComPtr<ID3D11Device> GetDevice() {
+		return m_device;
+	}
+
+	ComPtr<ID3D11DeviceContext> GetDeviceContext() {
+		return m_deviceContext;
+	}
+
 
 private:
 	void EnumAdapters(std::vector<ComPtr<IDXGIAdapter>>& outAdapters);
@@ -39,7 +49,13 @@ private:
 	void ObtainSwapchainResources();
 	void ReleaseSwapchainResources();
 
-	void GetInfo();
+	// @TODO: run this at the end of every frame or pass or each dx11 call?
+	// probably call on every dx11 draw call? so state can be verified?
+	void LogDebugInfo();
+
+	// @TODO: should these be in the utilities?
+	void VerifyGraphicsPipeline();
+	void VerifyComputePipeline();
 
 	ComPtr<IDXGIFactory2> m_factory;
 

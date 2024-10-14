@@ -10,6 +10,7 @@ set(H_FILES
 	src/Basic.hpp
 	src/Application.hpp	
 	src/Renderer.hpp
+	src/RendererUtils.hpp
 )
 
 set(CPP_FILES
@@ -37,6 +38,7 @@ target_link_libraries(${TARGET_NAME}
 	spdlog
 	stb
 	tinygltf
+	imgui
 )
 
 add_custom_command(TARGET ${TARGET_NAME} 
