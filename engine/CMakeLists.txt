@@ -9,15 +9,23 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(H_FILES
 	src/Basic.hpp
 	src/Application.hpp	
+
 	src/Renderer.hpp
 	src/RendererUtils.hpp
+	src/Mesh.hpp
+	src/Camera.hpp
+	src/Shader.hpp
 )
 
 set(CPP_FILES
 	src/Main.cpp
 	
 	src/Application.cpp
+
 	src/Renderer.cpp
+	src/Mesh.cpp
+	src/Camera.cpp
+	src/Shader.cpp
 )
 
 set(TARGET_NAME
