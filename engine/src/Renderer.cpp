@@ -4,6 +4,10 @@
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h>
 
+#include <imgui.h>
+#include <backends/imgui_impl_dx11.h>
+#include <backends/imgui_impl_glfw.h>
+
 #include <comdef.h>
 
 Renderer::Renderer(GLFWwindow* window)
@@ -151,14 +155,6 @@ Renderer::Renderer(GLFWwindow* window)
 
 	m_deviceContext->RSSetViewports(1, &m_viewport);
 
-	// triangle
-	//SimpleVertexCombined verticesCombo[] =
-	//{
-	//	SimpleVertexCombined{ DirectX::XMFLOAT3(0.0f, 0.5f, 0.5f), DirectX::XMFLOAT3(0.0f, 0.0f, 0.5f), DirectX::XMFLOAT2(0.0f, 0.5f) },
-	//	SimpleVertexCombined{ DirectX::XMFLOAT3(0.5f, -0.5f, 0.5f), DirectX::XMFLOAT3(0.5f, 0.0f, 0.0f), DirectX::XMFLOAT2(0.5f, -0.5f) },
-	//	SimpleVertexCombined{ DirectX::XMFLOAT3(-0.5f, -0.5f, 0.5f), DirectX::XMFLOAT3(0.0f, 0.5f, 0.0f), DirectX::XMFLOAT2(-0.5f, -0.5f) },
-	//};
-
 	// quad
 	SimpleVertexCombined verticesCombo[] =
 	{
@@ -188,11 +184,6 @@ Renderer::Renderer(GLFWwindow* window)
 	if (auto res = m_device->CreateBuffer(&vertBufferDesc, &vertexBufferInitData, &m_vertexBuffer); FAILED(res)) {
 		DXERROR(res);
 	}
-
-	// triangle
-	//u32 indices[] = {
-	//	0, 1, 2
-	//};
 
 	// quad
 	u32 indices[] = {
@@ -391,6 +382,16 @@ Renderer::Renderer(GLFWwindow* window)
 	if (auto res = m_device->CreateBuffer(&pointLightBufferDesc, nullptr, &m_pointLightBuffer); FAILED(res)) {
 		DXERROR(res);
 	}
+
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO();
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // IF using Docking Branch
+
+	ImGui_ImplGlfw_InitForOther(m_window, true);
+	ImGui_ImplDX11_Init(GetDevice().Get(), GetDeviceContext().Get());
 }
 
 Renderer::~Renderer()
@@ -403,6 +404,10 @@ Renderer::~Renderer()
 		DXERROR(res);
 	}
 #endif
+
+	ImGui_ImplDX11_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
 }
 
 void Renderer::EnumAdapters(std::vector<ComPtr<IDXGIAdapter>>& outAdapters) {
@@ -615,6 +620,13 @@ void Renderer::ResizeSwapchainResources(u32 width, u32 height) {
 
 void Renderer::Render() {
 
+
+	ImGui_ImplDX11_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
+	ImGui::NewFrame();
+	ImGui::ShowDemoWindow();
+
+
 	// begin render
 	const float clearColor[4] = {0.1f, 0.1f, 0.1f, 1.0f};
 	m_deviceContext->ClearRenderTargetView(m_renderTargetView.Get(), clearColor);
@@ -676,6 +688,13 @@ void Renderer::Render() {
 	m_deviceContext->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), m_depthStencilView.Get());
 
 	m_deviceContext->DrawIndexed(6, 0, 0);
+
+	// Rendering
+	// (Your code clears your framebuffer, renders your other stuff etc.)
+	ImGui::Render();
+
+	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+	// (Your code calls swapchain's Present() function)
 
 	// end render
 	// vsync enabled

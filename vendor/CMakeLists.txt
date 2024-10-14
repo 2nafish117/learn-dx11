@@ -26,3 +26,6 @@ add_subdirectory(tinygltf-2.9.3)
 
 # stb stuff
 add_subdirectory(stb)
+
+# imgui stuff
+add_subdirectory(imgui)
