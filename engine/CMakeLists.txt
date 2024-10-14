@@ -29,6 +29,8 @@ add_executable(${TARGET_NAME}
 	${H_FILES}
 )
 
+target_compile_options(${TARGET_NAME} PUBLIC -fno-exceptions)
+
 target_link_libraries(${TARGET_NAME}
 	d3d11.lib
 	dxgi.lib
@@ -39,6 +41,7 @@ target_link_libraries(${TARGET_NAME}
 	stb
 	tinygltf
 	imgui
+	EASTL
 )
 
 add_custom_command(TARGET ${TARGET_NAME} 

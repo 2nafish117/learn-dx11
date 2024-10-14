@@ -57,6 +57,7 @@ private:
 	void VerifyGraphicsPipeline();
 	void VerifyComputePipeline();
 
+private:
 	ComPtr<IDXGIFactory2> m_factory;
 
 	ComPtr<IDXGIAdapter> m_selectedAdapter;
@@ -118,4 +119,8 @@ private:
 	};
 
 	GLFWwindow* m_window = nullptr;
+
+	// @TODO: use proper allocators
+	byte* m_scratchMemory = nullptr;
+	u32 m_scratchSize = 0;
 };

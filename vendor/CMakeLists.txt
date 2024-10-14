@@ -29,3 +29,6 @@ add_subdirectory(stb)
 
 # imgui stuff
 add_subdirectory(imgui)
+
+# eastl stuff
+add_subdirectory(EASTL-3.21.23)

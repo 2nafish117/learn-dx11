@@ -13,6 +13,9 @@
 Renderer::Renderer(GLFWwindow* window)
 	: m_window(window)
 {
+	m_scratchSize = 4096;
+	m_scratchMemory = new byte[m_scratchSize];
+
 	assert(m_window != nullptr);
 
 	UINT factoryCreateFlags = 0;
@@ -2082,7 +2085,11 @@ void Renderer::LogDebugInfo()
 		m_debugInfoQueue->GetMessageA(i, nullptr, &messageSize);
 
 		// @TODO: use scratch memory / allocators
-		D3D11_MESSAGE* message = (D3D11_MESSAGE*)malloc(messageSize);
+		//D3D11_MESSAGE* message = (D3D11_MESSAGE*)malloc(messageSize);
+
+		assert(messageSize < m_scratchSize);
+		D3D11_MESSAGE* message = reinterpret_cast<D3D11_MESSAGE*>(m_scratchMemory);
+
 		m_debugInfoQueue->GetMessageA(i, message, &messageSize);
 
 		using level_enum = spdlog::level::level_enum;
@@ -2108,7 +2115,7 @@ void Renderer::LogDebugInfo()
 
 		spdlog::log(loglevel, "{} {} {}", messageIdStrings[message->ID], messageCategoryStrings[message->Category], message->pDescription);
 
-		free(message);
+		//free(message);
 	}
 
 	m_debugInfoQueue->ClearStoredMessages();
