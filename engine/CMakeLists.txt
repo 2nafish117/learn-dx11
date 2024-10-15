@@ -24,6 +24,7 @@ set(CPP_FILES
 	src/Application.cpp
 
 	src/Renderer.cpp
+	src/RendererDebug.cpp
 	src/Mesh.cpp
 	src/Camera.cpp
 	src/Shader.cpp

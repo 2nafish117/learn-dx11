@@ -1,17 +1,20 @@
 #pragma once
 
+#include <limits>
 #include <d3d11.h>
 #include <wrl.h>
 #include <dxgi1_6.h>
 #include <d3dcompiler.h>
 #include <directxmath.h>
-#include <limits>
 #include <stb/stb_image.h>
 
 #include "Basic.hpp"
 #include "RendererUtils.hpp"
 
 struct GLFWwindow;
+
+class Mesh;
+class Shader;
 
 class Renderer {
 	template<typename T>
@@ -23,6 +26,9 @@ public:
 	virtual ~Renderer();
 
 	void Render();
+
+	void Render(std::shared_ptr<Mesh> mesh, std::shared_ptr<Shader> shader);
+
 	void HandleResize(u32 width, u32 height);
 
 	ComPtr<ID3D11Device> GetDevice() {

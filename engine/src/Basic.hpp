@@ -10,11 +10,18 @@
 #include <array>
 #include <unordered_map>
 #include <map>
+#include <memory>
+
+#include <EASTL/string.h>
+#include <EASTL/string_view.h>
+#include <EASTL/array.h>
+#include <EASTL/vector.h>
 
 #include <spdlog/spdlog.h>
 #include <spdlog/stopwatch.h>
 
-#define ARR_LEN(arr) (sizeof(arr) / sizeof(arr[0]))
+#define ARRLEN(arr) (sizeof(arr) / sizeof(arr[0]))
+#define NAMEOF(x) (#x)
 
 using byte = unsigned char;
 
