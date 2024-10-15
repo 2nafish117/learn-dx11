@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(H_FILES
 	src/Basic.hpp
+	src/Math.hpp
 	src/Application.hpp	
 
 	src/Renderer.hpp

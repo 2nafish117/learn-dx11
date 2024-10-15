@@ -20,6 +20,7 @@ Renderer::Renderer(GLFWwindow* window)
 
 	UINT factoryCreateFlags = 0;
 
+// @TODO: make a DXDEBUG flag
 #ifdef _DEBUG
 	factoryCreateFlags |= D3D11_CREATE_DEVICE_FLAG::D3D11_CREATE_DEVICE_DEBUG;
 #endif
