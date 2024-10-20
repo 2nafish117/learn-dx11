@@ -19,7 +19,7 @@ Renderer::Renderer(GLFWwindow* window)
 	m_scratchSize = 4096;
 	m_scratchMemory = new byte[m_scratchSize];
 
-	assert(m_window != nullptr);
+	ASSERT(m_window != nullptr, "");
 
 	UINT factoryCreateFlags = 0;
 
@@ -218,44 +218,13 @@ Renderer::Renderer(GLFWwindow* window)
 		DXERROR(res);
 	}
 
-	// @TODO: shader defines and includes
-	// D3D_SHADER_MACRO defines = {
-	// 	LPCSTR Name;
-	// 	LPCSTR Definition;
-	// };
-	// I need to implement this interface to actually use it
-	// ComPtr<ID3DInclude> include;
+	std::unique_ptr<ID3DInclude> includer = std::make_unique<ShaderIncluder>();
+	m_shaderCompiler = std::make_unique<ShaderCompiler>(std::move(includer));
 
-	ComPtr<ID3DBlob> vertexBytecode;
-	{
-		ComPtr<ID3DBlob> errors;
-
-		UINT flags1 = D3DCOMPILE_WARNINGS_ARE_ERRORS | D3DCOMPILE_ENABLE_STRICTNESS;
-		// something to do with fx files???
-		UINT flags2 = 0;
-
-		if(auto res = D3DCompileFromFile(L"data/shaders/simple_vs.hlsl", nullptr, nullptr, "VSMain", "vs_5_0", flags1, flags2, &vertexBytecode, &errors); FAILED(res)) {
-			DXERROR(res);
-			spdlog::error("shader compile error: {}", (const char*)errors->GetBufferPointer());
-		}
-	}
-
-	ComPtr<ID3DBlob> pixelBytecode;
-	{
-		ComPtr<ID3DBlob> errors;
-
-		UINT flags1 = D3DCOMPILE_WARNINGS_ARE_ERRORS | D3DCOMPILE_ENABLE_STRICTNESS;
-		// something to do with fx files???
-		UINT flags2 = 0;
-
-		if (auto res = D3DCompileFromFile(L"data/shaders/simple_ps.hlsl", nullptr, nullptr, "PSMain", "ps_5_0", flags1, flags2, &pixelBytecode, &errors); FAILED(res)) {
-			DXERROR(res);
-			spdlog::error("shader compile error: {}", (const char*)errors->GetBufferPointer());
-		}
-	}
-
+	ComPtr<ID3DBlob> vertexBytecode = m_shaderCompiler->CompileShader(L"data/shaders/simple_vs.hlsl", "VSMain", "vs_5_0");
 	m_device->CreateVertexShader(vertexBytecode->GetBufferPointer(), vertexBytecode->GetBufferSize(), nullptr, &m_simpleVertex);
 
+	ComPtr<ID3DBlob> pixelBytecode = m_shaderCompiler->CompileShader(L"data/shaders/simple_ps.hlsl", "PSMain", "ps_5_0");
 	m_device->CreatePixelShader(pixelBytecode->GetBufferPointer(), pixelBytecode->GetBufferSize(), nullptr, &m_simplePixel);
 
 	D3D11_INPUT_ELEMENT_DESC inputElementDescs[] = {
@@ -298,8 +267,9 @@ Renderer::Renderer(GLFWwindow* window)
 	};
 
 	ComPtr<ID3D11InputLayout> m_inputLayout;
-	m_device->CreateInputLayout(inputElementDescs, ARRAYSIZE(inputElementDescs), vertexBytecode->GetBufferPointer(), vertexBytecode->GetBufferSize(), &m_inputLayout);
-	m_deviceContext->IASetInputLayout(m_inputLayout.Get());
+	if (auto res = m_device->CreateInputLayout(inputElementDescs, ARRAYSIZE(inputElementDescs), vertexBytecode->GetBufferPointer(), vertexBytecode->GetBufferSize(), &m_inputLayout); FAILED(res)) {
+		m_deviceContext->IASetInputLayout(m_inputLayout.Get());
+	}
 
 	int texture_width = 0;
 	int texture_height = 0;
@@ -461,7 +431,7 @@ Renderer::ComPtr<IDXGIAdapter> Renderer::PickAdapter(const std::vector<ComPtr<ID
 	}
 
 	// @TODO: pick a dedicated card, by scoring the gpus
-	assert(adapters.size() > 0);
+	ASSERT(adapters.size() > 0, "");
 	// return first adapter for now
 	return adapters[0];
 }
@@ -512,7 +482,7 @@ Renderer::ComPtr<IDXGIOutput> Renderer::PickOutput(const std::vector<ComPtr<IDXG
 }
 
 void Renderer::CreateDeviceAndContext(UINT createFlags) {
-	assert(m_selectedAdapter.Get() != nullptr);
+	ASSERT(m_selectedAdapter.Get() != nullptr, "");
 
 	D3D_FEATURE_LEVEL requiredFeatureLevels[] = {
 		D3D_FEATURE_LEVEL_11_0,
@@ -542,7 +512,7 @@ void Renderer::CreateDeviceAndContext(UINT createFlags) {
 		DXERROR(res);
 	}
 
-	assert(supportedFeatureLevel == D3D_FEATURE_LEVEL_11_0);
+	ASSERT(supportedFeatureLevel == D3D_FEATURE_LEVEL_11_0, "");
 	spdlog::info("created device and device context");
 
 #if _DEBUG

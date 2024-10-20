@@ -3,6 +3,8 @@
 #include <wrl.h>
 #include <d3dcompiler.h>
 #include <d3d11.h>
+#include <d3dcommon.h>
+#include <dxgi1_6.h>
 
 #include "Basic.hpp"
 #include "RendererUtils.hpp"
@@ -28,108 +30,50 @@ private:
     using ComPtr = Microsoft::WRL::ComPtr<T>;
 
 public:
-    ShaderCompiler(eastl::string_view target = "vs_5_0") 
-        : m_target(target)
+    ShaderCompiler(std::unique_ptr<ID3DInclude>&& includer = nullptr) 
+        : m_includer(std::move(includer))
     {}
 
-    ComPtr<ID3DBlob> CompileShader(eastl::wstring_view filePath, eastl::string_view entryFunc, D3D_SHADER_MACRO* defines = nullptr, ComPtr<ID3DInclude> include = nullptr) {
-        assert(filePath.data());
-        assert(entryFunc.data());
-
-        ComPtr<ID3DBlob> bytecode;
-        ComPtr<ID3DBlob> errors;
-
-        UINT flags1 = D3DCOMPILE_WARNINGS_ARE_ERRORS | D3DCOMPILE_ENABLE_STRICTNESS;
-        // something to do with fx files???
-        UINT flags2 = 0;
-
-        if (auto res = D3DCompileFromFile(filePath.data(), defines, include.Get(), entryFunc.data(), m_target.data(), flags1, flags2, &bytecode, &errors); FAILED(res)) {
-            DXERROR(res);
-            spdlog::error("shader compile error: {}", (const char*)errors->GetBufferPointer());
-        }
-
-        return bytecode;
-    }
+    ComPtr<ID3DBlob> CompileShader(eastl::wstring_view filePath, eastl::string_view entryFunc, eastl::string_view target, D3D_SHADER_MACRO* defines = nullptr);
 
 private:
-    eastl::string_view m_target;
+	std::unique_ptr<ID3DInclude> m_includer;
+};
+
+// @TODO: implement the shader includer
+class ShaderIncluder : public ID3DInclude {
+
+public:
+	HRESULT Open(D3D_INCLUDE_TYPE IncludeType, LPCSTR pFileName, LPCVOID pParentData, LPCVOID *ppData, UINT *pBytes);
+	HRESULT Close(LPCVOID pData);
 };
 
 class VertexShader : public ShaderBase {
     using Base = ShaderBase;
 public:
-    VertexShader(ComPtr<ID3D11Device> device, ComPtr<ID3DBlob> blob, eastl::string_view filePath) 
-        : Base(blob, filePath), m_device(device)
-    {
-        assert(m_blob);
+    VertexShader(ComPtr<ID3D11Device> device, ComPtr<ID3DBlob> blob, eastl::string_view filePath);
 
-        // @TODO: what is this?
-        ID3D11ClassLinkage* linkage = nullptr;
-        m_device->CreateVertexShader(m_blob->GetBufferPointer(), m_blob->GetBufferSize(), linkage, &m_shader);
-    }
-
-    void SetInputLayout(D3D11_INPUT_ELEMENT_DESC descs) {
-
-        D3D11_INPUT_ELEMENT_DESC inputElementDescs[] = {
-            {
-                .SemanticName = "POSITION",
-                .SemanticIndex = 0,
-                .Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT,
-                .InputSlot = 0,
-                .AlignedByteOffset = 0,
-                .InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
-                .InstanceDataStepRate = 0,
-            },
-            {
-                .SemanticName = "NORMAL",
-                .SemanticIndex = 0,
-                .Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT,
-                .InputSlot = 0,
-                .AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT,
-                .InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
-                .InstanceDataStepRate = 0,
-            },
-            {
-                .SemanticName = "COLOR",
-                .SemanticIndex = 0,
-                .Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT,
-                .InputSlot = 0,
-                .AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT,
-                .InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
-                .InstanceDataStepRate = 0,
-            },
-            {
-                .SemanticName = "TEXCOORD",
-                .SemanticIndex = 0,
-                .Format = DXGI_FORMAT::DXGI_FORMAT_R32G32_FLOAT,
-                .InputSlot = 0,
-                .AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT,
-                .InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
-                .InstanceDataStepRate = 0,
-            }
-        };
-
-        ComPtr<ID3D11InputLayout> m_inputLayout;
-	    m_device->CreateInputLayout(inputElementDescs, ARRAYSIZE(inputElementDescs), vertexBytecode->GetBufferPointer(), vertexBytecode->GetBufferSize(), &m_inputLayout);
-    }
-
-    // set buffer
-    // set sampler
-    // set texture
+	inline ComPtr<ID3D11VertexShader> Get() {
+		return m_shader;
+	}
 private:
 
     ComPtr<ID3D11Device> m_device;
 	ComPtr<ID3D11VertexShader> m_shader;
-    ComPtr<ID3D11InputLayout> m_inputLayout;
+	// @TODO: do we need a ref to the input layout ?
+    // ComPtr<ID3D11InputLayout> m_inputLayout;
 };
 
-// class PixelShader : public ShaderBase {
-// public:
-//     PixelShader(eastl::string_view filePath);
-//     PixelShader(ComPtr<ID3DBlob> blob);
-//     virtual ~PixelShader() override;
+class PixelShader : public ShaderBase {
+    using Base = ShaderBase;
+public:
+    PixelShader(ComPtr<ID3D11Device> device, ComPtr<ID3DBlob> blob, eastl::string_view filePath);
 
-// private:
+	inline ComPtr<ID3D11PixelShader> Get() {
+		return m_shader;
+	}
+private:
 
-// 	ComPtr<ID3D11VertexShader> m_shader;
-// };
+    ComPtr<ID3D11Device> m_device;
+	ComPtr<ID3D11PixelShader> m_shader;
+};

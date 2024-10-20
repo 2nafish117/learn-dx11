@@ -1,8 +1,9 @@
 #pragma once
 
-#include <memory>
+#include "Basic.hpp"
 
-#include "Renderer.hpp"
+class Renderer;
+class ShaderCompiler;
 
 struct GLFWwindow;
 
@@ -18,6 +19,7 @@ private:
 
 private:
 	GLFWwindow* m_window = nullptr;
+
 	std::unique_ptr<Renderer> m_renderer;
 
 	// glfw callbacks

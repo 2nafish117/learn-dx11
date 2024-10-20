@@ -8,7 +8,14 @@
 // #include <d3dcompiler.h>
 
 class Mesh {
+	template<typename T>
+	using ComPtr = Microsoft::WRL::ComPtr<T>;
+
 public:
+
+	Mesh() {}
+	virtual ~Mesh() {}
+
 	struct Vertex {
 		float3 position;
 		float3 normal;
@@ -18,10 +25,7 @@ public:
 
 
 private:
-	template<typename T>
-	using ComPtr = Microsoft::WRL::ComPtr<T>;
-
-	// @TODO: SOA vertex stream
+	// @TODO: SOA vertex stream?
 	ComPtr<ID3D11Buffer> m_vertexBuffer;
 	ComPtr<ID3D11Buffer> m_indexBuffer;
 };

@@ -11,6 +11,7 @@
 #include <unordered_map>
 #include <map>
 #include <memory>
+#include <limits>
 
 #include <EASTL/string.h>
 #include <EASTL/string_view.h>
@@ -22,6 +23,13 @@
 
 #define ARRLEN(arr) (sizeof(arr) / sizeof(arr[0]))
 #define NAMEOF(x) (#x)
+
+#define DEBUGBREAK() __debugbreak()
+
+#define ASSERT(condition, msg) {	\
+	assert((condition) && (msg));	\
+	if(!(condition)) DEBUGBREAK();	\
+}
 
 using byte = unsigned char;
 

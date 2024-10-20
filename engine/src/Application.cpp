@@ -1,14 +1,18 @@
 #include "Application.hpp"
 
-#include <GLFW/glfw3.h>
 
 #include <spdlog/spdlog.h>
+
+#include "Renderer.hpp"
+#include "Shader.hpp"
+
+#include <GLFW/glfw3.h>
 
 #pragma region glfw callbacks
 
 static void WindowSizeCallback(GLFWwindow* window, int width, int height) {
 	void* user = glfwGetWindowUserPointer(window);
-	assert(user != nullptr);
+	ASSERT(user != nullptr, "");
 	Application* application = (Application*)user;
 
 	application->OnWindowResize(window);
@@ -51,6 +55,7 @@ int Application::Run()
 	
 	glfwSetWindowSizeCallback(m_window, WindowSizeCallback);
 	glfwSetWindowUserPointer(m_window, this);
+
 
 	if (!m_window)
 	{

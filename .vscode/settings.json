@@ -62,6 +62,21 @@
 		"unordered_map": "cpp",
 		"vector": "cpp",
 		"xhash": "cpp",
-		"xtree": "cpp"
+		"xtree": "cpp",
+		"filesystem": "cpp",
+		"iomanip": "cpp",
+		"algorithm": "cpp",
+		"array": "cpp",
+		"bitset": "cpp",
+		"condition_variable": "cpp",
+		"future": "cpp",
+		"numeric": "cpp",
+		"ratio": "cpp",
+		"set": "cpp",
+		"source_location": "cpp",
+		"span": "cpp",
+		"string": "cpp",
+		"valarray": "cpp",
+		"variant": "cpp"
 	}
 }

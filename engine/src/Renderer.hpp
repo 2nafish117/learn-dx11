@@ -1,10 +1,10 @@
 #pragma once
 
-#include <limits>
 #include <d3d11.h>
 #include <wrl.h>
 #include <dxgi1_6.h>
 #include <d3dcompiler.h>
+#include <d3dcommon.h>
 #include <directxmath.h>
 #include <stb/stb_image.h>
 
@@ -15,6 +15,7 @@ struct GLFWwindow;
 
 class Mesh;
 class Shader;
+class ShaderCompiler;
 
 class Renderer {
 	template<typename T>
@@ -93,8 +94,12 @@ private:
 	ComPtr<ID3D11Buffer> m_vertexBuffer;
 	ComPtr<ID3D11Buffer> m_indexBuffer;
 
+	std::unique_ptr<ShaderCompiler> m_shaderCompiler;
+
 	ComPtr<ID3D11VertexShader> m_simpleVertex;
 	ComPtr<ID3D11PixelShader> m_simplePixel;
+
+	// std::
 
 	ComPtr<ID3D11ShaderResourceView> m_testSRV;
 	ComPtr<ID3D11SamplerState> m_testSamplerState;

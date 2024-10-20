@@ -1,3 +1,5 @@
+#include "testinclude.hlsl"
+
 struct PSInput {
 	float4 position: SV_POSITION;
 	float3 ws_position: POSITION;
@@ -48,7 +50,8 @@ float3 PhongBRDF(float3 wsLightPos, float3 wsCamPos, float3 wsFragPos, float3 ws
 	return ka * ambient + kd * diffuse + ks * specular;
 }
 
-float4 PSMain(PSInput psInput) : SV_TARGET {
+float4 PSMain(PSInput psInput) : SV_TARGET
+{
 
 	float4 color = tex.Sample(texSampler, psInput.uv0);
 	
