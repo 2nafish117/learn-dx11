@@ -24,7 +24,11 @@
 #define ARRLEN(arr) (sizeof(arr) / sizeof(arr[0]))
 #define NAMEOF(x) (#x)
 
+#ifdef _DEBUG
 #define DEBUGBREAK() __debugbreak()
+#else
+#define DEBUGBREAK()
+#endif
 
 #define ASSERT(condition, msg) {	\
 	assert((condition) && (msg));	\

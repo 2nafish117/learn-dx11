@@ -218,14 +218,20 @@ Renderer::Renderer(GLFWwindow* window)
 		DXERROR(res);
 	}
 
+	m_simpleVertexAsset = std::make_shared<ShaderAsset>(L"data/shaders/simple_vs.hlsl", "VSMain", "vs_5_0");
+	m_simplePixelAsset = std::make_shared<ShaderAsset>(L"data/shaders/simple_ps.hlsl", "PSMain", "ps_5_0");
+
 	std::unique_ptr<ID3DInclude> includer = std::make_unique<ShaderIncluder>();
 	m_shaderCompiler = std::make_unique<ShaderCompiler>(std::move(includer));
 
-	ComPtr<ID3DBlob> vertexBytecode = m_shaderCompiler->CompileShader(L"data/shaders/simple_vs.hlsl", "VSMain", "vs_5_0");
-	m_device->CreateVertexShader(vertexBytecode->GetBufferPointer(), vertexBytecode->GetBufferSize(), nullptr, &m_simpleVertex);
+	m_shaderCompiler->CompileShaderAsset(m_simpleVertexAsset);
+	m_shaderCompiler->CompileShaderAsset(m_simplePixelAsset);
 
-	ComPtr<ID3DBlob> pixelBytecode = m_shaderCompiler->CompileShader(L"data/shaders/simple_ps.hlsl", "PSMain", "ps_5_0");
-	m_device->CreatePixelShader(pixelBytecode->GetBufferPointer(), pixelBytecode->GetBufferSize(), nullptr, &m_simplePixel);
+	m_simpleVertex = std::make_shared<VertexShader>(m_device, m_simpleVertexAsset);
+	m_simplePixel = std::make_shared<PixelShader>(m_device, m_simplePixelAsset);
+
+	// m_device->CreateVertexShader(vertexBytecode->GetBufferPointer(), vertexBytecode->GetBufferSize(), nullptr, &m_simpleVertex);
+	// m_device->CreatePixelShader(pixelBytecode->GetBufferPointer(), pixelBytecode->GetBufferSize(), nullptr, &m_simplePixel);
 
 	D3D11_INPUT_ELEMENT_DESC inputElementDescs[] = {
 		{
@@ -267,9 +273,11 @@ Renderer::Renderer(GLFWwindow* window)
 	};
 
 	ComPtr<ID3D11InputLayout> m_inputLayout;
-	if (auto res = m_device->CreateInputLayout(inputElementDescs, ARRAYSIZE(inputElementDescs), vertexBytecode->GetBufferPointer(), vertexBytecode->GetBufferSize(), &m_inputLayout); FAILED(res)) {
-		m_deviceContext->IASetInputLayout(m_inputLayout.Get());
+	if (auto res = m_device->CreateInputLayout(inputElementDescs, ARRAYSIZE(inputElementDescs), m_simpleVertexAsset->GetBlob()->GetBufferPointer(), m_simpleVertexAsset->GetBlob()->GetBufferSize(), &m_inputLayout); FAILED(res)) {
+		DXERROR(res);
 	}
+
+	m_deviceContext->IASetInputLayout(m_inputLayout.Get());
 
 	int texture_width = 0;
 	int texture_height = 0;
@@ -653,10 +661,10 @@ void Renderer::Render() {
 	m_deviceContext->IASetIndexBuffer(m_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 	m_deviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	
-	m_deviceContext->VSSetShader(m_simpleVertex.Get(), nullptr, 0);
+	m_deviceContext->VSSetShader(m_simpleVertex->Get(), nullptr, 0);
 	m_deviceContext->VSSetConstantBuffers(0, 1, m_matrixBuffer.GetAddressOf());
 
-	m_deviceContext->PSSetShader(m_simplePixel.Get(), nullptr, 0);
+	m_deviceContext->PSSetShader(m_simplePixel->Get(), nullptr, 0);
 	m_deviceContext->PSSetShaderResources(0, 1, m_testSRV.GetAddressOf());
 	m_deviceContext->PSSetSamplers(0, 1, m_testSamplerState.GetAddressOf());
 	m_deviceContext->PSSetConstantBuffers(0, 1, m_pointLightBuffer.GetAddressOf());
@@ -681,7 +689,7 @@ void Renderer::Render() {
 	LogDebugInfo();
 }
 
-void Renderer::Render(std::shared_ptr<Mesh> mesh, std::shared_ptr<Shader> shader)
+void Renderer::Render(std::shared_ptr<Mesh> mesh, std::shared_ptr<VertexShader> shader)
 {
 
 }

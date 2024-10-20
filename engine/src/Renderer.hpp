@@ -13,8 +13,12 @@
 
 struct GLFWwindow;
 
+class ShaderAsset;
+
 class Mesh;
-class Shader;
+class VertexShader;
+class PixelShader;
+
 class ShaderCompiler;
 
 class Renderer {
@@ -28,7 +32,7 @@ public:
 
 	void Render();
 
-	void Render(std::shared_ptr<Mesh> mesh, std::shared_ptr<Shader> shader);
+	void Render(std::shared_ptr<Mesh> mesh, std::shared_ptr<VertexShader> shader);
 
 	void HandleResize(u32 width, u32 height);
 
@@ -94,12 +98,17 @@ private:
 	ComPtr<ID3D11Buffer> m_vertexBuffer;
 	ComPtr<ID3D11Buffer> m_indexBuffer;
 
+
+	std::shared_ptr<ShaderAsset> m_simpleVertexAsset;
+	std::shared_ptr<ShaderAsset> m_simplePixelAsset;
+
+	std::shared_ptr<VertexShader> m_simpleVertex;
+	std::shared_ptr<PixelShader> m_simplePixel;
+
 	std::unique_ptr<ShaderCompiler> m_shaderCompiler;
 
-	ComPtr<ID3D11VertexShader> m_simpleVertex;
-	ComPtr<ID3D11PixelShader> m_simplePixel;
-
-	// std::
+	// ComPtr<ID3D11VertexShader> m_simpleVertex;
+	// ComPtr<ID3D11PixelShader> m_simplePixel;
 
 	ComPtr<ID3D11ShaderResourceView> m_testSRV;
 	ComPtr<ID3D11SamplerState> m_testSamplerState;
