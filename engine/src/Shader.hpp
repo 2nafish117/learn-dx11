@@ -7,7 +7,7 @@
 #include <dxgi1_6.h>
 
 #include "Basic.hpp"
-#include "RendererUtils.hpp"
+#include "Renderer/DX11ContextUtils.hpp"
 
 
 class ShaderAsset {

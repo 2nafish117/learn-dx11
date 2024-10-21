@@ -11,8 +11,8 @@ set(H_FILES
 	src/Math.hpp
 	src/Application.hpp	
 
-	src/Renderer.hpp
-	src/RendererUtils.hpp
+	src/Renderer/DX11Context.hpp
+	src/Renderer/DX11ContextUtils.hpp
 	src/Mesh.hpp
 	src/Camera.hpp
 	src/Shader.hpp
@@ -23,8 +23,8 @@ set(CPP_FILES
 	
 	src/Application.cpp
 
-	src/Renderer.cpp
-	src/RendererDebug.cpp
+	src/Renderer/DX11Context.cpp
+	src/Renderer/DX11ContextDebug.cpp
 	src/Mesh.cpp
 	src/Camera.cpp
 	src/Shader.cpp
@@ -50,6 +50,10 @@ target_link_libraries(${TARGET_NAME}
 	stb
 	tinygltf
 	imgui
+)
+
+target_include_directories(${TARGET_NAME}
+	PRIVATE ${CMAKE_SOURCE_DIR}/${TARGET_NAME}/src
 )
 
 add_custom_command(TARGET ${TARGET_NAME} 

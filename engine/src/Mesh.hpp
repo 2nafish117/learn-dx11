@@ -3,7 +3,7 @@
 #include "Basic.hpp"
 #include "Math.hpp"
 
-#include "RendererUtils.hpp"
+#include "Renderer/DX11ContextUtils.hpp"
 
 #include <d3d11.h>
 #include <wrl.h>

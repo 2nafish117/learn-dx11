@@ -1,4 +1,4 @@
-#include "Renderer.hpp"
+#include "DX11Context.hpp"
 
 #include <GLFW/glfw3.h>
 #define GLFW_EXPOSE_NATIVE_WIN32
@@ -10,11 +10,11 @@
 
 #include <comdef.h>
 
-#include "Mesh.hpp"
-#include "Shader.hpp"
-#include "Camera.hpp"
+#include "../Mesh.hpp"
+#include "../Shader.hpp"
+#include "../Camera.hpp"
 
-Renderer::Renderer(GLFWwindow* window)
+DX11Context::DX11Context(GLFWwindow* window)
 	: m_window(window)
 {
 	m_scratchSize = 4096;
@@ -338,7 +338,7 @@ Renderer::Renderer(GLFWwindow* window)
 	ImGui_ImplDX11_Init(GetDevice().Get(), GetDeviceContext().Get());
 }
 
-Renderer::~Renderer()
+DX11Context::~DX11Context()
 {
 #ifdef _DEBUG
 	// @TODO: this is kinda stupid because the lifetimes of the dx objects are tied to the lifetimes of the renderer
@@ -354,7 +354,7 @@ Renderer::~Renderer()
 	ImGui::DestroyContext();
 }
 
-void Renderer::EnumAdapters(std::vector<ComPtr<IDXGIAdapter>>& outAdapters) {
+void DX11Context::EnumAdapters(std::vector<ComPtr<IDXGIAdapter>>& outAdapters) {
 	// hard upper bound 512, who has more than 512 gpus?
 	for (int i = 0; i < 512; ++i)
 	{
@@ -369,7 +369,7 @@ void Renderer::EnumAdapters(std::vector<ComPtr<IDXGIAdapter>>& outAdapters) {
 	}
 }
 
-Renderer::ComPtr<IDXGIAdapter> Renderer::PickAdapter(const std::vector<ComPtr<IDXGIAdapter>>& adapters) {
+DX11Context::ComPtr<IDXGIAdapter> DX11Context::PickAdapter(const std::vector<ComPtr<IDXGIAdapter>>& adapters) {
 	spdlog::info("picking adapter");
 
 	DXGI_ADAPTER_DESC desc;
@@ -403,7 +403,7 @@ Renderer::ComPtr<IDXGIAdapter> Renderer::PickAdapter(const std::vector<ComPtr<ID
 	return adapters[0];
 }
 
-void Renderer::EnumOutputs(ComPtr<IDXGIAdapter> adapter, std::vector<ComPtr<IDXGIOutput>>& outOutputs) {
+void DX11Context::EnumOutputs(ComPtr<IDXGIAdapter> adapter, std::vector<ComPtr<IDXGIOutput>>& outOutputs) {
 	spdlog::info("enumerating outputs");
 	outOutputs.reserve(8);
 
@@ -420,7 +420,7 @@ void Renderer::EnumOutputs(ComPtr<IDXGIAdapter> adapter, std::vector<ComPtr<IDXG
 	}
 }
 
-Renderer::ComPtr<IDXGIOutput> Renderer::PickOutput(const std::vector<ComPtr<IDXGIOutput>>& outputs) {
+DX11Context::ComPtr<IDXGIOutput> DX11Context::PickOutput(const std::vector<ComPtr<IDXGIOutput>>& outputs) {
 	spdlog::info("picking outputs");
 
 	for (auto& output : outputs) {
@@ -448,7 +448,7 @@ Renderer::ComPtr<IDXGIOutput> Renderer::PickOutput(const std::vector<ComPtr<IDXG
 	return outputs[0];
 }
 
-void Renderer::CreateDeviceAndContext(UINT createFlags) {
+void DX11Context::CreateDeviceAndContext(UINT createFlags) {
 	ASSERT(m_selectedAdapter.Get() != nullptr, "");
 
 	D3D_FEATURE_LEVEL requiredFeatureLevels[] = {
@@ -487,7 +487,7 @@ void Renderer::CreateDeviceAndContext(UINT createFlags) {
 #endif
 }
 
-void Renderer::CreateSwapchain(GLFWwindow* window, u32 bufferCount) {
+void DX11Context::CreateSwapchain(GLFWwindow* window, u32 bufferCount) {
 	spdlog::info("creating swapchain for window: {}", glfwGetWindowTitle(window));
 
 	HWND hwnd = glfwGetWin32Window(window);
@@ -520,7 +520,7 @@ void Renderer::CreateSwapchain(GLFWwindow* window, u32 bufferCount) {
 	spdlog::info("created swapchain");
 }
 
-void Renderer::ObtainSwapchainResources() {
+void DX11Context::ObtainSwapchainResources() {
 	ComPtr<ID3D11Texture2D> backBuffer;
 	if (auto res = m_swapchain->GetBuffer(0, IID_PPV_ARGS(&backBuffer)); FAILED(res)) {
 		DXERROR(res);
@@ -544,12 +544,12 @@ void Renderer::ObtainSwapchainResources() {
 	spdlog::info("created render target view");
 }
 
-void Renderer::ReleaseSwapchainResources() {
+void DX11Context::ReleaseSwapchainResources() {
 	m_renderTargetView.Reset();
 	spdlog::info("release swapchain resources");
 }
 
-void Renderer::ResizeSwapchainResources(u32 width, u32 height) {
+void DX11Context::ResizeSwapchainResources(u32 width, u32 height) {
 	m_deviceContext->Flush();
 	ReleaseSwapchainResources();
 
@@ -562,7 +562,7 @@ void Renderer::ResizeSwapchainResources(u32 width, u32 height) {
 	ObtainSwapchainResources();
 }
 
-void Renderer::Render() {
+void DX11Context::Render() {
 
 
 	ImGui_ImplDX11_NewFrame();
@@ -585,7 +585,7 @@ void Renderer::Render() {
 	//auto rotMatrix = DirectX::XMMatrixIdentity();
 
 	auto transMatrix = DirectX::XMMatrixTranslation(moveX, moveY, 0);
-	
+
 	DirectX::XMMATRIX modelToWorld = DirectX::XMMatrixIdentity();
 	modelToWorld = modelToWorld * rotMatrix;
 	modelToWorld = modelToWorld * transMatrix;
@@ -649,12 +649,12 @@ void Renderer::Render() {
 	LogDebugInfo();
 }
 
-void Renderer::Render(std::shared_ptr<Mesh> mesh, std::shared_ptr<VertexShader> shader)
+void DX11Context::Render(std::shared_ptr<Mesh> mesh, std::shared_ptr<VertexShader> shader)
 {
 
 }
 
-void Renderer::HandleResize(u32 width, u32 height)
+void DX11Context::HandleResize(u32 width, u32 height)
 {
 	ResizeSwapchainResources(width, height);
 

@@ -1,6 +1,6 @@
-#include "Renderer.hpp"
+#include "DX11Context.hpp"
 
-void Renderer::LogDebugInfo()
+void DX11Context::LogDebugInfo()
 {
 	static const char* messageCategoryStrings[] = {
 		"APPLICATION_DEFINED",
@@ -1404,13 +1404,13 @@ void Renderer::LogDebugInfo()
 	m_debugInfoQueue->ClearStoredMessages();
 }
 
-void Renderer::VerifyGraphicsPipeline() {
+void DX11Context::VerifyGraphicsPipeline() {
 	if(auto res = m_debug->ValidateContext(m_deviceContext.Get()); FAILED(res)) {
 		DXERROR(res);
 	}
 }
 
-void Renderer::VerifyComputePipeline() {
+void DX11Context::VerifyComputePipeline() {
 	if(auto res = m_debug->ValidateContextForDispatch(m_deviceContext.Get()); FAILED(res)) {
 		DXERROR(res);
 	}

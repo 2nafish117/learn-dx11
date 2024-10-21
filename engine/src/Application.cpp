@@ -3,7 +3,7 @@
 
 #include <spdlog/spdlog.h>
 
-#include "Renderer.hpp"
+#include "Renderer/DX11Context.hpp"
 #include "Shader.hpp"
 
 #include <GLFW/glfw3.h>
@@ -64,7 +64,7 @@ int Application::Run()
 		return -1;
 	}
 
-	m_renderer = std::make_unique<Renderer>(m_window);
+	m_renderer = std::make_unique<DX11Context>(m_window);
 
 	while (!glfwWindowShouldClose(m_window))
 	{

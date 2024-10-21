@@ -10,7 +10,7 @@
 
 #include "Basic.hpp"
 #include "Math.hpp"
-#include "RendererUtils.hpp"
+#include "DX11ContextUtils.hpp"
 
 struct GLFWwindow;
 
@@ -24,14 +24,14 @@ class PixelShader;
 
 class ShaderCompiler;
 
-class Renderer {
+class DX11Context {
 	template<typename T>
 	using ComPtr = Microsoft::WRL::ComPtr<T>;
 	
 public:
 	// @TODO: could be array of windows
-	Renderer(GLFWwindow* window);
-	virtual ~Renderer();
+	DX11Context(GLFWwindow* window);
+	virtual ~DX11Context();
 
 	void Render();
 
