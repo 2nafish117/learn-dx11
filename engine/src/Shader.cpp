@@ -24,9 +24,9 @@ bool ShaderCompiler::CompileShaderAsset(std::weak_ptr<ShaderAsset> asset)
 }
 
 ShaderCompiler::CompiledResult ShaderCompiler::CompileShader(
-	eastl::wstring_view filePath, 
-	eastl::string_view entryFunc, 
-	eastl::string_view target, 
+	std::wstring_view filePath, 
+	std::string_view entryFunc, 
+	std::string_view target, 
 	const std::vector<D3D_SHADER_MACRO>& defines) {
 
 	ASSERT(filePath.data(), "");

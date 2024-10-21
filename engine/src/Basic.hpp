@@ -13,11 +13,6 @@
 #include <memory>
 #include <limits>
 
-#include <EASTL/string.h>
-#include <EASTL/string_view.h>
-#include <EASTL/array.h>
-#include <EASTL/vector.h>
-
 #include <spdlog/spdlog.h>
 #include <spdlog/stopwatch.h>
 

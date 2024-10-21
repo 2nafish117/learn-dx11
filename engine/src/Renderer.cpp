@@ -162,61 +162,20 @@ Renderer::Renderer(GLFWwindow* window)
 
 	m_deviceContext->RSSetViewports(1, &m_viewport);
 
-	// quad
-	SimpleVertexCombined verticesCombo[] =
-	{
-		SimpleVertexCombined{ DirectX::XMFLOAT3(-0.5f, -0.5f, 0.5f), DirectX::XMFLOAT3(0.0f, 0.0f, -1.0f), DirectX::XMFLOAT3(0.0f, 0.5f, 0.0f), DirectX::XMFLOAT2(0.0f, 1.0f) },
-		SimpleVertexCombined{ DirectX::XMFLOAT3(0.5f, 0.5f, 0.5f), DirectX::XMFLOAT3(0.0f, 0.0f, -1.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 0.5f), DirectX::XMFLOAT2(1.0f, 0.0f) },
-		SimpleVertexCombined{ DirectX::XMFLOAT3(0.5f, -0.5f, 0.5f), DirectX::XMFLOAT3(0.0f, 0.0f, -1.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 0.5f), DirectX::XMFLOAT2(1.0f, 1.0f) },
-		SimpleVertexCombined{ DirectX::XMFLOAT3(-0.5f, 0.5f, 0.5f), DirectX::XMFLOAT3(0.0f, 0.0f, -1.0f), DirectX::XMFLOAT3(0.5f, 0.0f, 0.0f), DirectX::XMFLOAT2(0.0f, 0.0f) },
+	std::vector<MeshAsset::Vertex> vertices = {
+		MeshAsset::Vertex{ float3(-0.5f, -0.5f, 0.5f), float3(0.0f, 0.0f, -1.0f), float3(0.0f, 0.5f, 0.0f), float2(0.0f, 1.0f) },
+		MeshAsset::Vertex{ float3(0.5f, 0.5f, 0.5f),   float3(0.0f, 0.0f, -1.0f), float3(0.0f, 0.0f, 0.5f), float2(1.0f, 0.0f) },
+		MeshAsset::Vertex{ float3(0.5f, -0.5f, 0.5f),  float3(0.0f, 0.0f, -1.0f), float3(0.0f, 0.0f, 0.5f), float2(1.0f, 1.0f) },
+		MeshAsset::Vertex{ float3(-0.5f, 0.5f, 0.5f),  float3(0.0f, 0.0f, -1.0f), float3(0.5f, 0.0f, 0.0f), float2(0.0f, 0.0f) },
 	};
 
-
-	D3D11_BUFFER_DESC vertBufferDesc = {
-		.ByteWidth = sizeof(SimpleVertexCombined) * ARRAYSIZE(verticesCombo),
-		.Usage = D3D11_USAGE_DEFAULT,
-		.BindFlags = D3D11_BIND_VERTEX_BUFFER,
-		.CPUAccessFlags = 0,
-		.MiscFlags = 0,
-		.StructureByteStride = sizeof(SimpleVertexCombined),
-	};
-
-	D3D11_SUBRESOURCE_DATA vertexBufferInitData = {
-		.pSysMem = verticesCombo,
-		// these have no meaning for vertex buffers
-		.SysMemPitch = 0,
-		.SysMemSlicePitch = 0,
-	};
-	
-	if (auto res = m_device->CreateBuffer(&vertBufferDesc, &vertexBufferInitData, &m_vertexBuffer); FAILED(res)) {
-		DXERROR(res);
-	}
-
-	// quad
-	u32 indices[] = {
+	std::vector<u32> indices = {
 		0, 1, 2,
 		0, 3, 1
 	};
 
-	D3D11_BUFFER_DESC indexBufferDesc = {
-		.ByteWidth = sizeof(int) * ARRAYSIZE(indices),
-		.Usage = D3D11_USAGE_DEFAULT,
-		.BindFlags = D3D11_BIND_INDEX_BUFFER,
-		.CPUAccessFlags = 0,
-		.MiscFlags = 0,
-		.StructureByteStride = sizeof(int),
-	};
-
-	D3D11_SUBRESOURCE_DATA indexBufferInitData = {
-		.pSysMem = indices,
-		// these have no meaning for index buffers
-		.SysMemPitch = 0,
-		.SysMemSlicePitch = 0,
-	};
-	
-	if (auto res = m_device->CreateBuffer(&indexBufferDesc, &indexBufferInitData, &m_indexBuffer); FAILED(res)) {
-		DXERROR(res);
-	}
+	m_quadMeshAsset = std::make_shared<MeshAsset>(vertices, indices);
+	m_quadMesh = std::make_shared<Mesh>(m_device, m_quadMeshAsset);
 
 	m_simpleVertexAsset = std::make_shared<ShaderAsset>(L"data/shaders/simple_vs.hlsl", "VSMain", "vs_5_0");
 	m_simplePixelAsset = std::make_shared<ShaderAsset>(L"data/shaders/simple_ps.hlsl", "PSMain", "ps_5_0");
@@ -654,11 +613,15 @@ void Renderer::Render() {
 	plBuffer->Col = DirectX::XMFLOAT3(1.0, 1.0, 1.0);
 	m_deviceContext->Unmap(m_pointLightBuffer.Get(), 0);
 
-	// render stuff
-	UINT strides[] = { sizeof(SimpleVertexCombined) };
-	UINT offsets[] = { 0 };
-	m_deviceContext->IASetVertexBuffers(0, 1, m_vertexBuffer.GetAddressOf(), strides, offsets);
-	m_deviceContext->IASetIndexBuffer(m_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+	m_deviceContext->IASetVertexBuffers(
+		0, 
+		m_quadMesh->GetVertexBufferCount(), 
+		m_quadMesh->GetVertexBuffer().GetAddressOf(), 
+		m_quadMesh->GetVertexBufferStrides().data(), 
+		m_quadMesh->GetVertexBufferOffsets().data());
+
+	m_deviceContext->IASetIndexBuffer(m_quadMesh->GetIndexBuffer().Get(), m_quadMesh->GetIndexBufferFormat(), 0);
+
 	m_deviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	
 	m_deviceContext->VSSetShader(m_simpleVertex->Get(), nullptr, 0);
@@ -672,7 +635,7 @@ void Renderer::Render() {
 
 	m_deviceContext->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), m_depthStencilView.Get());
 
-	m_deviceContext->DrawIndexed(6, 0, 0);
+	m_deviceContext->DrawIndexed(m_quadMesh->GetIndexCount(), 0, 0);
 
 	// Rendering
 	// (Your code clears your framebuffer, renders your other stuff etc.)

@@ -46,12 +46,10 @@ target_link_libraries(${TARGET_NAME}
 	dxgi.lib
 	d3dcompiler.lib
 	glfw
-	gb
 	spdlog
 	stb
 	tinygltf
 	imgui
-	EASTL
 )
 
 add_custom_command(TARGET ${TARGET_NAME} 

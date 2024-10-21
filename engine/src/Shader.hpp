@@ -15,7 +15,7 @@ class ShaderAsset {
     using ComPtr = Microsoft::WRL::ComPtr<T>;
 
 public:
-    ShaderAsset(eastl::wstring_view filePath, eastl::string_view entryFunc, eastl::string_view target, const std::vector<D3D_SHADER_MACRO>& defines = {})
+    ShaderAsset(std::wstring_view filePath, std::string_view entryFunc, std::string_view target, const std::vector<D3D_SHADER_MACRO>& defines = {})
         : m_filePath(filePath), m_entryFunc(entryFunc), m_target(target), m_defines(defines) {}
 
 	inline bool IsCompiled() {
@@ -30,15 +30,15 @@ public:
 		m_blob = blob;
 	}
 
-	inline eastl::wstring_view GetFilePath() {
+	inline std::wstring_view GetFilePath() {
 		return m_filePath;
 	}
 
-	inline eastl::string_view GetEntryFunc() {
+	inline std::string_view GetEntryFunc() {
 		return m_entryFunc;
 	}
 
-	inline eastl::string_view GetTarget() {
+	inline std::string_view GetTarget() {
 		return m_target;
 	}
 
@@ -48,9 +48,9 @@ public:
 
 private:
     ComPtr<ID3DBlob> m_blob = nullptr;
-    eastl::wstring_view m_filePath = L"";
-	eastl::string_view m_entryFunc = "";
-	eastl::string_view m_target = "";
+    std::wstring_view m_filePath = L"";
+	std::string_view m_entryFunc = "";
+	std::string_view m_target = "";
 	std::vector<D3D_SHADER_MACRO> m_defines;
 };
 
@@ -91,9 +91,9 @@ private:
 		ComPtr<ID3DBlob> error;
 	};
 	CompiledResult CompileShader(
-		eastl::wstring_view filePath, 
-		eastl::string_view entryFunc, 
-		eastl::string_view target, 
+		std::wstring_view filePath, 
+		std::string_view entryFunc, 
+		std::string_view target, 
 		const std::vector<D3D_SHADER_MACRO>& defines);
 };
 

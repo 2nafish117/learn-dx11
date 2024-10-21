@@ -9,11 +9,13 @@
 #include <stb/stb_image.h>
 
 #include "Basic.hpp"
+#include "Math.hpp"
 #include "RendererUtils.hpp"
 
 struct GLFWwindow;
 
 class ShaderAsset;
+class MeshAsset;
 
 class Mesh;
 class VertexShader;
@@ -94,10 +96,8 @@ private:
 
 	D3D11_VIEWPORT m_viewport = {};
 
-	// @TODO move these to a model class
-	ComPtr<ID3D11Buffer> m_vertexBuffer;
-	ComPtr<ID3D11Buffer> m_indexBuffer;
-
+	std::shared_ptr<MeshAsset> m_quadMeshAsset;
+	std::shared_ptr<Mesh> m_quadMesh; 
 
 	std::shared_ptr<ShaderAsset> m_simpleVertexAsset;
 	std::shared_ptr<ShaderAsset> m_simplePixelAsset;
@@ -107,9 +107,6 @@ private:
 
 	std::unique_ptr<ShaderCompiler> m_shaderCompiler;
 
-	// ComPtr<ID3D11VertexShader> m_simpleVertex;
-	// ComPtr<ID3D11PixelShader> m_simplePixel;
-
 	ComPtr<ID3D11ShaderResourceView> m_testSRV;
 	ComPtr<ID3D11SamplerState> m_testSamplerState;
 
@@ -117,18 +114,10 @@ private:
 
 	ComPtr<ID3D11Buffer> m_pointLightBuffer;
 
-	struct SimpleVertexCombined
-	{
-		DirectX::XMFLOAT3 Pos;
-		DirectX::XMFLOAT3 Normal;
-		DirectX::XMFLOAT3 Col;
-		DirectX::XMFLOAT2 UV0;
-	};
-
 	struct MatrixBuffer {
-		DirectX::XMMATRIX ModelToWorld;
-		DirectX::XMMATRIX WorldToView;
-		DirectX::XMMATRIX ViewToProjection;
+		mat4 ModelToWorld;
+		mat4 WorldToView;
+		mat4 ViewToProjection;
 	};
 
 	struct PointLightBuffer {

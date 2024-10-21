@@ -11,9 +11,6 @@ set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 add_subdirectory(glfw-3.4)
 
-# gb stuff
-add_subdirectory(gb)
-
 # spdlog stuff
 set(SPDLOG_WCHAR_SUPPORT ON)
 set(SPDLOG_WCHAR_FILENAMES ON)
@@ -29,6 +26,3 @@ add_subdirectory(stb)
 
 # imgui stuff
 add_subdirectory(imgui)
-
-# eastl stuff
-add_subdirectory(EASTL-3.21.23)
