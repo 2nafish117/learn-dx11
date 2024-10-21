@@ -16,6 +16,7 @@ struct GLFWwindow;
 
 class ShaderAsset;
 class MeshAsset;
+class Camera;
 
 class Mesh;
 class VertexShader;
@@ -113,6 +114,8 @@ private:
 	ComPtr<ID3D11Buffer> m_matrixBuffer;
 
 	ComPtr<ID3D11Buffer> m_pointLightBuffer;
+
+	std::shared_ptr<Camera> m_camera;
 
 	struct MatrixBuffer {
 		mat4 ModelToWorld;

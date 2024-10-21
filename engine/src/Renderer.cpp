@@ -12,6 +12,7 @@
 
 #include "Mesh.hpp"
 #include "Shader.hpp"
+#include "Camera.hpp"
 
 Renderer::Renderer(GLFWwindow* window)
 	: m_window(window)
@@ -189,8 +190,7 @@ Renderer::Renderer(GLFWwindow* window)
 	m_simpleVertex = std::make_shared<VertexShader>(m_device, m_simpleVertexAsset);
 	m_simplePixel = std::make_shared<PixelShader>(m_device, m_simplePixelAsset);
 
-	// m_device->CreateVertexShader(vertexBytecode->GetBufferPointer(), vertexBytecode->GetBufferSize(), nullptr, &m_simpleVertex);
-	// m_device->CreatePixelShader(pixelBytecode->GetBufferPointer(), pixelBytecode->GetBufferSize(), nullptr, &m_simplePixel);
+	m_camera = std::make_shared<Camera>();
 
 	D3D11_INPUT_ELEMENT_DESC inputElementDescs[] = {
 		{
@@ -584,26 +584,23 @@ void Renderer::Render() {
 	//auto rotMatrix = DirectX::XMMatrixTranslation(angle, 0, 0);
 	//auto rotMatrix = DirectX::XMMatrixIdentity();
 
-	// @TODO: camera class
-	float fov = DirectX::XMConvertToRadians(80);
-	float aspect = (float)16.0 / (float)9.0;
-
 	auto transMatrix = DirectX::XMMatrixTranslation(moveX, moveY, 0);
-
+	
 	DirectX::XMMATRIX modelToWorld = DirectX::XMMatrixIdentity();
 	modelToWorld = modelToWorld * rotMatrix;
 	modelToWorld = modelToWorld * transMatrix;
 
-	// worl to view is the inverse of the model to world matrix of the camera
-	DirectX::XMMATRIX worldToView = DirectX::XMMatrixInverse(nullptr, DirectX::XMMatrixTranslation(0, 0, -1));
-	DirectX::XMMATRIX viewToProjection = DirectX::XMMatrixPerspectiveFovLH(fov, aspect, 0.1f, 100.0f);
+	m_camera->transform.matrix = DirectX::XMMatrixTranslation(0, 0, -1);
+
+	mat4 worldToCam = m_camera->GetView();
+	mat4 CamToProjection = m_camera->GetProjection();
 
 	D3D11_MAPPED_SUBRESOURCE subresource;
 	m_deviceContext->Map(m_matrixBuffer.Get(), 0, D3D11_MAP::D3D11_MAP_WRITE_DISCARD, 0, &subresource);
 	MatrixBuffer* data = reinterpret_cast<MatrixBuffer*>(subresource.pData);
 	data->ModelToWorld = DirectX::XMMatrixTranspose(modelToWorld);
-	data->WorldToView = DirectX::XMMatrixTranspose(worldToView);
-	data->ViewToProjection = DirectX::XMMatrixTranspose(viewToProjection);
+	data->WorldToView = DirectX::XMMatrixTranspose(worldToCam);
+	data->ViewToProjection = DirectX::XMMatrixTranspose(CamToProjection);
 	m_deviceContext->Unmap(m_matrixBuffer.Get(), 0);
 
 	D3D11_MAPPED_SUBRESOURCE pointSubresource;
