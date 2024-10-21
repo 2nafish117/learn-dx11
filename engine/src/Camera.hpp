@@ -2,7 +2,6 @@
 
 #include "Math.hpp"
 
-
 class Transform {
 public:
     mat4 matrix = DirectX::XMMatrixIdentity();
