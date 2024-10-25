@@ -6,37 +6,14 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(H_FILES
-	src/Basic.hpp
-	src/Math.hpp
-	src/Application.hpp	
-	src/Scene.hpp
-	src/Mesh.hpp
-	src/Camera.hpp
-	src/Shader.hpp
-)
-
-set(CPP_FILES
-	src/Main.cpp
-	src/Application.cpp
-	src/Scene.cpp
-	src/Mesh.cpp
-	src/Camera.cpp
-	src/Shader.cpp
-)
-
 set(TARGET_NAME
 	engine
 )
 
-add_executable(${TARGET_NAME} 
-	${CPP_FILES}
-	${H_FILES}
-)
-
-add_subdirectory(src/Renderer)
-
+add_executable(${TARGET_NAME})
 target_compile_options(${TARGET_NAME} PUBLIC -fno-exceptions)
+
+add_subdirectory(src)
 
 target_link_libraries(${TARGET_NAME}
 	d3d11.lib
@@ -49,10 +26,8 @@ target_link_libraries(${TARGET_NAME}
 	imgui
 )
 
-target_include_directories(${TARGET_NAME}
-	PRIVATE ${CMAKE_SOURCE_DIR}/${TARGET_NAME}/src
-)
-
+# @TODO: if assets change, i need a recopy
+# @TODO: is it possible to just avoid this copy instead?? maybe pass a cmd line path to the data dir
 add_custom_command(TARGET ${TARGET_NAME} 
 	POST_BUILD 
 	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/${TARGET_NAME}/data $<TARGET_FILE_DIR:${TARGET_NAME}>/../data

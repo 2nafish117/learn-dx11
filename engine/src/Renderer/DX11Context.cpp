@@ -10,9 +10,9 @@
 
 #include <comdef.h>
 
-#include "../Mesh.hpp"
-#include "../Shader.hpp"
-#include "../Camera.hpp"
+#include "Mesh.hpp"
+#include "Shader.hpp"
+#include "Camera.hpp"
 
 DX11Context::DX11Context(GLFWwindow* window)
 	: m_window(window)
