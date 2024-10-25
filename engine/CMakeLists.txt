@@ -34,6 +34,8 @@ add_executable(${TARGET_NAME}
 	${H_FILES}
 )
 
+add_subdirectory(src/Renderer)
+
 target_compile_options(${TARGET_NAME} PUBLIC -fno-exceptions)
 
 target_link_libraries(${TARGET_NAME}
