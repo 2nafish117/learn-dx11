@@ -100,6 +100,9 @@ private:
 	std::shared_ptr<MeshAsset> m_quadMeshAsset;
 	std::shared_ptr<Mesh> m_quadMesh; 
 
+	std::shared_ptr<MeshAsset> m_cubeMeshAsset;
+	std::shared_ptr<Mesh> m_cubeMesh; 
+
 	std::shared_ptr<ShaderAsset> m_simpleVertexAsset;
 	std::shared_ptr<ShaderAsset> m_simplePixelAsset;
 

@@ -16,10 +16,8 @@ set(SPDLOG_WCHAR_SUPPORT ON)
 set(SPDLOG_WCHAR_FILENAMES ON)
 add_subdirectory(spdlog-1.14.1)
 
-# tinygltf stuff
-set(TINYGLTF_HEADER_ONLY ON CACHE INTERNAL "" FORCE)
-set(TINYGLTF_INSTALL OFF CACHE INTERNAL "" FORCE)
-add_subdirectory(tinygltf-2.9.3)
+# cgltf stuff
+add_subdirectory(cgltf)
 
 # stb stuff
 add_subdirectory(stb)

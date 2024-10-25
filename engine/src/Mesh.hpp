@@ -8,6 +8,8 @@
 #include <d3d11.h>
 #include <wrl.h>
 
+#include <cgltf/cgltf.h>
+
 class MeshAsset {
 
 public:
@@ -18,15 +20,8 @@ public:
 		float2 uv0;
 	};
 
-	// @TODO: model loading
-	// MeshAsset(std::wstring_view filePath) {
-	// }
-
-	MeshAsset(const std::vector<Vertex>& vertices, const std::vector<u32>& indices) 
-		: m_vertices(vertices), m_indices(indices)
-	{
-		
-	}
+	MeshAsset(std::string_view filePath);
+	MeshAsset(const std::vector<Vertex>& vertices, const std::vector<u32>& indices) ;
 
 	inline const std::vector<Vertex>& GetVertices() {
 		return m_vertices;
@@ -37,6 +32,10 @@ public:
 	}
 
 private:
+	void GltfPrintInfo(cgltf_data* data);
+
+private:
+	std::string_view m_filePath;
 	// @TODO: store vertices in SOA
 	std::vector<Vertex> m_vertices;
 	std::vector<u32> m_indices;

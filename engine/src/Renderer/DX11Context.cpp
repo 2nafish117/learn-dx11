@@ -178,6 +178,9 @@ DX11Context::DX11Context(GLFWwindow* window)
 	m_quadMeshAsset = std::make_shared<MeshAsset>(vertices, indices);
 	m_quadMesh = std::make_shared<Mesh>(m_device, m_quadMeshAsset);
 
+	m_cubeMeshAsset = std::make_shared<MeshAsset>("data/meshes/cube.glb");
+	m_cubeMesh = std::make_shared<Mesh>(m_device, m_cubeMeshAsset);
+
 	m_simpleVertexAsset = std::make_shared<ShaderAsset>(L"data/shaders/simple_vs.hlsl", "VSMain", "vs_5_0");
 	m_simplePixelAsset = std::make_shared<ShaderAsset>(L"data/shaders/simple_ps.hlsl", "PSMain", "ps_5_0");
 
@@ -383,7 +386,6 @@ DX11Context::ComPtr<IDXGIAdapter> DX11Context::PickAdapter(const std::vector<Com
 		memset(description, 0, 128);
 		wcstombs(description, desc.Description, 128);
 
-		// @TODO: format in multiline
 		spdlog::info(
 			"[DXGI_ADAPTER_DESC1 Description={} VendorId={} DeviceId={} SubSysId={} Revision={} DedicatedVideoMemory={} DedicatedSystemMemory={} SharedSystemMemory={}]",
 			description,

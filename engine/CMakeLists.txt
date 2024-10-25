@@ -22,8 +22,8 @@ target_link_libraries(${TARGET_NAME}
 	glfw
 	spdlog
 	stb
-	tinygltf
 	imgui
+	cgltf
 )
 
 # @TODO: if assets change, i need a recopy
