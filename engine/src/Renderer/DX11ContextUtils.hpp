@@ -5,7 +5,7 @@
 
 static void dxlog(spdlog::level::level_enum lvl, const char* file, int line, HRESULT hr) {
 	_com_error err(hr);
-	spdlog::log(spdlog::level::err, "[DX] {}:{} : {} ({:x})", file, line, err.ErrorMessage(), (u32)hr);
+	spdlog::log(lvl, "[DX] {}:{} : {} ({:x})", file, line, err.ErrorMessage(), (u32)hr);
 }
 
 // @TODO: use the levels correctly

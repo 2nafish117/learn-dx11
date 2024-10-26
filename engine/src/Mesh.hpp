@@ -8,7 +8,7 @@
 #include <d3d11.h>
 #include <wrl.h>
 
-#include <cgltf/cgltf.h>
+struct cgltf_data;
 
 class MeshAsset {
 
@@ -20,6 +20,7 @@ public:
 		float2 uv0;
 	};
 
+	// @TODO: temporary
 	MeshAsset(std::string_view filePath);
 	MeshAsset(const std::vector<Vertex>& vertices, const std::vector<u32>& indices) ;
 
@@ -33,6 +34,11 @@ public:
 
 private:
 	void GltfPrintInfo(cgltf_data* data);
+
+	void GltfPrintMeshInfo(cgltf_data* data);
+	void GltfPrintAnimationInfo(cgltf_data* data);
+	void GltfPrintMaterialInfo(cgltf_data* data);
+	void GltfPrintImageInfo(cgltf_data* data);
 
 private:
 	std::string_view m_filePath;
@@ -80,17 +86,17 @@ public:
 		return DXGI_FORMAT_R32_UINT;
 	}
 
-	inline size_t GetVertexCount() {
+	inline uint GetVertexCount() {
 		if(auto ma = m_meshAsset.lock(); ma != nullptr) {
-			return ma->GetVertices().size();
+			return static_cast<uint>(ma->GetVertices().size());
 		}
 
 		return 0;
 	}
 
-	inline size_t GetIndexCount() {
+	inline uint GetIndexCount() {
 		if(auto ma = m_meshAsset.lock(); ma != nullptr) {
-			return ma->GetIndices().size();
+			return static_cast<uint>(ma->GetIndices().size());
 		}
 
 		return 0;

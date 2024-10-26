@@ -178,8 +178,14 @@ DX11Context::DX11Context(GLFWwindow* window)
 	m_quadMeshAsset = std::make_shared<MeshAsset>(vertices, indices);
 	m_quadMesh = std::make_shared<Mesh>(m_device, m_quadMeshAsset);
 
-	m_cubeMeshAsset = std::make_shared<MeshAsset>("data/meshes/cube.glb");
+	m_cubeMeshAsset = std::make_shared<MeshAsset>("data/meshes/Box.glb");
 	m_cubeMesh = std::make_shared<Mesh>(m_device, m_cubeMeshAsset);
+
+	//m_twoCubeMeshAsset = std::make_shared<MeshAsset>("data/meshes/two_cubes.glb");
+	//m_twoCubeMesh = std::make_shared<Mesh>(m_device, m_twoCubeMeshAsset);
+
+	// m_sceneMeshAsset = std::make_shared<MeshAsset>("data/meshes/scene1.glb");
+	// m_sceneMesh = std::make_shared<Mesh>(m_device, m_sceneMeshAsset);
 
 	m_simpleVertexAsset = std::make_shared<ShaderAsset>(L"data/shaders/simple_vs.hlsl", "VSMain", "vs_5_0");
 	m_simplePixelAsset = std::make_shared<ShaderAsset>(L"data/shaders/simple_ps.hlsl", "PSMain", "ps_5_0");
@@ -384,7 +390,8 @@ DX11Context::ComPtr<IDXGIAdapter> DX11Context::PickAdapter(const std::vector<Com
 
 		char description[128];
 		memset(description, 0, 128);
-		wcstombs(description, desc.Description, 128);
+		wcstombs_s(nullptr, description, desc.Description, 128);
+		// wcstombs();
 
 		spdlog::info(
 			"[DXGI_ADAPTER_DESC1 Description={} VendorId={} DeviceId={} SubSysId={} Revision={} DedicatedVideoMemory={} DedicatedSystemMemory={} SharedSystemMemory={}]",
@@ -433,7 +440,7 @@ DX11Context::ComPtr<IDXGIOutput> DX11Context::PickOutput(const std::vector<ComPt
 
 		char deviceName[128];
 		memset(deviceName, 0, 128);
-		wcstombs(deviceName, desc.DeviceName, 32);
+		wcstombs_s(nullptr, deviceName, desc.DeviceName, 32);
 
 		spdlog::info("[DXGI_OUTPUT_DESC DeviceName={} DesktopCoordinates.left={} DesktopCoordinates.top={} DesktopCoordinates.right={} DesktopCoordinates.bottom={} AttachedToDesktop={} Rotation={}]",
 			deviceName,
@@ -578,10 +585,10 @@ void DX11Context::Render() {
 	m_deviceContext->ClearRenderTargetView(m_renderTargetView.Get(), clearColor);
 	m_deviceContext->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-	double time = glfwGetTime();
-	double angle = DirectX::XMScalarSin(time);
-	double moveX = 0.5 * DirectX::XMScalarSin(time * 2);
-	double moveY = 0.5 * DirectX::XMScalarSin(time * 2);
+	float time = static_cast<float>(glfwGetTime());
+	float angle = DirectX::XMScalarSin(time);
+	float moveX = 0.5f * DirectX::XMScalarSin(time * 2.0f);
+	float moveY = 0.5f * DirectX::XMScalarSin(time * 2.0f);
 	auto rotMatrix = DirectX::XMMatrixRotationY(angle);
 	//auto rotMatrix = DirectX::XMMatrixTranslation(angle, 0, 0);
 	//auto rotMatrix = DirectX::XMMatrixIdentity();

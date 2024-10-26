@@ -10,7 +10,7 @@
 
 #pragma region glfw callbacks
 
-static void WindowSizeCallback(GLFWwindow* window, int width, int height) {
+void WindowSizeCallback(GLFWwindow* window, int width, int height) {
 	void* user = glfwGetWindowUserPointer(window);
 	ASSERT(user != nullptr, "");
 	Application* application = (Application*)user;

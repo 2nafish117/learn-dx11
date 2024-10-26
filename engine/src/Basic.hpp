@@ -30,6 +30,9 @@
 	if(!(condition)) DEBUGBREAK();	\
 }
 
+#define UNIMPLEMENTED() ASSERT(false, msg)
+#define UNREACHABLE(msg) ASSERT(false, msg)
+
 using byte = unsigned char;
 
 using u8  = uint8_t;
@@ -41,6 +44,8 @@ using i8  = int8_t;
 using i16 = int16_t;
 using i32 = int32_t;
 using i64 = int64_t;
+
+using uint = unsigned int;
 
 using f32 = float;
 using f64 = double;

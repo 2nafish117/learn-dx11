@@ -11,7 +11,22 @@ set(TARGET_NAME
 )
 
 add_executable(${TARGET_NAME})
-target_compile_options(${TARGET_NAME} PUBLIC -fno-exceptions)
+
+if(MSVC)
+  target_compile_options(${TARGET_NAME} 
+  PRIVATE 
+  /W4 
+  # /WX
+  )
+else()
+  target_compile_options(${TARGET_NAME} 
+  PRIVATE 
+  -Wall 
+  -Wextra 
+  -Wpedantic 
+  # -Werror
+  )
+endif()
 
 add_subdirectory(src)
 

@@ -1,5 +1,8 @@
 #include "Shader.hpp"
 
+#include <d3dcompiler.h>
+#include <d3dcommon.h>
+
 bool ShaderCompiler::CompileShaderAsset(std::weak_ptr<ShaderAsset> asset)
 {
 	if(auto a = asset.lock(); a != nullptr) {

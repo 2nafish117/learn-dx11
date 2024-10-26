@@ -1,5 +1,8 @@
 #include "Mesh.hpp"
 
+#include <cgltf/cgltf.h>
+
+
 #pragma region static cgltf strings
 
 static const char* cgltf_buffer_view_type_strings[] = {
@@ -141,10 +144,115 @@ MeshAsset::MeshAsset(std::string_view filePath)
 		return;
 	}
 
-	// data->meshes[7].primitives[6].attributes[4].name
-	// do stuff
-
+	// spdlog::info("{}", data->json);
+	
 	GltfPrintInfo(data);
+
+	if(cgltf_load_buffers(&options, data, filePath.data()) != cgltf_result_success) {
+		return;
+	}
+
+
+
+
+	// @TODO: temprary
+	cgltf_mesh* mesh = &data->meshes[0];
+	cgltf_primitive* primitive = &mesh->primitives[0];
+
+	// cgltf_accessor_unpack_indices(primitive->indices, nullptr, );
+	ASSERT(primitive->indices->component_type == cgltf_component_type::cgltf_component_type_r_16u, "need u16 indices");
+
+	// data->accessors[0].
+
+	cgltf_size indices_offset = primitive->indices->buffer_view->offset;
+	u16* indices_buffer = reinterpret_cast<u16*>(static_cast<byte*>(primitive->indices->buffer_view->buffer->data) + indices_offset);
+	cgltf_size indices_count = primitive->indices->count;
+
+	m_indices.reserve(indices_count);
+	for(int i = 0;i < indices_count; ++i) {
+		u16 index = indices_buffer[i];
+		m_indices.push_back(index);
+	}
+
+	// m_vertices.reserve();
+
+	const byte* positions = nullptr;
+	cgltf_size positions_count = 0;
+
+	const byte* colors = nullptr;
+	cgltf_size colors_count = 0;
+
+	const byte* uvs = nullptr;
+	cgltf_size uvs_count = 0;
+
+	const byte* normals = nullptr;
+	cgltf_size normals_count = 0;
+
+	const byte* tangents = nullptr;
+	cgltf_size tangents_count = 0;
+
+	for(int a = 0; a < mesh->primitives->attributes_count; ++a) {
+		cgltf_attribute* attribute = &mesh->primitives->attributes[a];
+		cgltf_buffer_view* buffer_view = attribute->data->buffer_view;
+
+		ASSERT(buffer_view->type == cgltf_buffer_view_type_vertices, "");
+
+		switch(attribute->type) {
+		case cgltf_attribute_type_position: {
+			ASSERT(attribute->data->type == cgltf_type_vec3, "");
+			ASSERT(attribute->data->component_type == cgltf_component_type_r_32f, "")
+
+			positions_count = attribute->data->count;
+			positions = cgltf_buffer_view_data(buffer_view);
+		} break;
+		case cgltf_attribute_type_normal: {
+			ASSERT(attribute->data->type == cgltf_type_vec3, "");
+			ASSERT(attribute->data->component_type == cgltf_component_type_r_32f, "")
+			
+			normals_count = attribute->data->count;
+			normals = cgltf_buffer_view_data(buffer_view);
+		} break;
+		case cgltf_attribute_type_tangent: {
+			ASSERT(attribute->data->type == cgltf_type_vec3, "");
+			ASSERT(attribute->data->component_type == cgltf_component_type_r_32f, "")
+			
+			tangents_count = attribute->data->count;
+			tangents = cgltf_buffer_view_data(buffer_view);
+		} break;
+		case cgltf_attribute_type_texcoord: {
+			ASSERT(attribute->data->type == cgltf_type_vec2, "");
+			ASSERT(attribute->data->component_type == cgltf_component_type_r_32f, "")
+			
+			uvs_count = attribute->data->count;
+			uvs = cgltf_buffer_view_data(buffer_view);
+		} break;
+		case cgltf_attribute_type_color: {
+			ASSERT(attribute->data->type == cgltf_type_vec3, "");
+			ASSERT(attribute->data->component_type == cgltf_component_type_r_32f, "")
+			
+			colors_count = attribute->data->count;
+			colors = cgltf_buffer_view_data(buffer_view);
+		} break;
+		case cgltf_attribute_type_joints: {
+
+		} break;
+		case cgltf_attribute_type_weights: {
+
+		} break;
+		case cgltf_attribute_type_custom: {
+
+		} break;
+		case cgltf_attribute_type_invalid: 
+		case cgltf_attribute_type_max_enum: {
+			UNREACHABLE("");
+		} break;
+		};
+	}
+
+	ASSERT(positions_count == colors_count, "");
+	ASSERT(positions_count == uvs_count, "");
+	ASSERT(positions_count == normals_count, "");
+	ASSERT(positions_count == tangents_count, "");	
 
 	cgltf_free(data);
 }
@@ -155,24 +263,6 @@ MeshAsset::MeshAsset(const std::vector<Vertex>& vertices, const std::vector<u32>
 	
 }
 
-
-void MeshAsset::GltfPrintInfo(cgltf_data* data) {
-
-	for(int m = 0;m < data->meshes_count; ++m) {
-		cgltf_mesh mesh = data->meshes[m];
-		spdlog::info("[mesh name={}]", mesh.name);
-
-		for(int p = 0;p < mesh.primitives_count; ++p) {
-			cgltf_primitive primitive = mesh.primitives[p];
-			spdlog::info("[primitive type={}]", cgltf_primitive_type_strings[primitive.type]);
-
-			for(int a = 0; a < primitive.attributes_count; ++a) {
-				cgltf_attribute attribute = primitive.attributes[a];			
-				spdlog::info("[attribute name={} index={} type={}]", attribute.name, attribute.index, cgltf_attribute_type_strings[attribute.type]);
-			}
-		}
-	}
-}
 
 void Mesh::CreateBuffers()
 {
@@ -222,3 +312,90 @@ void Mesh::CreateBuffers()
         }
     }
 }
+
+
+#pragma region debug print gltf file
+
+void MeshAsset::GltfPrintInfo(cgltf_data* data) {
+	for(int s = 0;s < data->scenes_count; ++s) {
+		cgltf_scene scene = data->scenes[s];
+		spdlog::info("[scene name={} nodes_count={}]", scene.name, scene.nodes_count);
+	}
+	
+	GltfPrintMeshInfo(data);
+
+	GltfPrintMaterialInfo(data);
+
+	GltfPrintImageInfo(data);
+
+	GltfPrintAnimationInfo(data);
+
+	for(int a = 0; a < data->accessors_count; ++a) {
+		cgltf_accessor accessor = data->accessors[a];
+		spdlog::info("[accessor name={} comp_type={} is_sparse={}]", accessor.name, cgltf_component_type_strings[accessor.component_type], accessor.is_sparse);
+	}
+}
+
+
+void MeshAsset::GltfPrintAnimationInfo(cgltf_data* data) {
+	for(int a = 0; a < data->animations_count; ++a) {
+		cgltf_animation animation = data->animations[a];
+		spdlog::info("[animation name={}]", animation.name);
+
+		for(int c = 0; c < animation.channels_count; ++c) {
+			spdlog::info("[channel path_type={}]", cgltf_animation_path_type_strings[animation.channels[c].target_path]);
+		}
+	}
+}
+
+void MeshAsset::GltfPrintMaterialInfo(cgltf_data* data) {
+	for(int m = 0;m < data->materials_count; ++m) {
+		cgltf_material material = data->materials[m];
+
+		spdlog::info("[material name={}]", material.name);
+	}
+}
+
+void MeshAsset::GltfPrintImageInfo(cgltf_data* data) {
+	for(int i = 0;i < data->images_count; ++i) {
+		cgltf_image image = data->images[i];
+		spdlog::info("[image name={} uri={} mime_type={}]", image.name, image.uri, image.mime_type);
+	}	
+}
+
+void MeshAsset::GltfPrintMeshInfo(cgltf_data* data) {
+
+	for(int m = 0;m < data->meshes_count; ++m) {
+		cgltf_mesh mesh = data->meshes[m];
+		spdlog::info("[mesh name={}]", mesh.name);
+		
+		for(int p = 0;p < mesh.primitives_count; ++p) {
+			cgltf_primitive primitive = mesh.primitives[p];
+			spdlog::info("[primitive type={}]", cgltf_primitive_type_strings[primitive.type]);
+
+			for(int a = 0; a < primitive.attributes_count; ++a) {
+				cgltf_attribute attribute = primitive.attributes[a];			
+				spdlog::info("[attribute name={} index={} type={}]", attribute.name, attribute.index, cgltf_attribute_type_strings[attribute.type]);
+			}
+
+			spdlog::info("[indices name={} type={}]", primitive.indices->name, cgltf_component_type_strings[primitive.indices->component_type]);
+		}
+
+		for(int w = 0;w < mesh.weights_count; ++w) {
+			cgltf_float weight = mesh.weights[w];
+			spdlog::info("[weight value={}]", weight);
+		}
+
+		for(int tn = 0; tn < mesh.target_names_count; ++tn) {
+			const char* tname = mesh.target_names[tn];
+			spdlog::info("[target name={}]", tname);
+		}
+
+		for(int e = 0;e < mesh.extensions_count; ++e) {
+			cgltf_extension extension = mesh.extensions[e];
+			spdlog::info("[extension name={}]", extension.name);
+		}
+	}
+}
+
+#pragma endregion debug print gltf file

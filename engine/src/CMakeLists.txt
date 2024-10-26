@@ -4,18 +4,26 @@ target_sources(${TARGET_NAME}
 PRIVATE 
 	Basic.hpp
 	Math.hpp
-	Application.hpp	
-	Scene.hpp
-	Mesh.hpp
-	Camera.hpp
-	Shader.hpp
 
 	Main.cpp
+	
+	Application.hpp	
 	Application.cpp
+	
+	Scene.hpp
 	Scene.cpp
+	
+	Mesh.hpp
 	Mesh.cpp
+	
+	Camera.hpp
 	Camera.cpp
+	
+	Shader.hpp
 	Shader.cpp
+
+	Importers.cpp
+	Importers.hpp
 )
 
 add_subdirectory(Renderer)

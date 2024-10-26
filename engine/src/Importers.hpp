@@ -1,9 +1,8 @@
 #pragma once
 
-// @TODO:
+// @TODO
 
-class Scene {
+class GltfImporter {
 public:
-	
 private:
 };

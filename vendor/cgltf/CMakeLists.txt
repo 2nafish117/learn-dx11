@@ -5,6 +5,8 @@ project(cgltf
 )
 
 add_library(cgltf
+	cgltf/cgltf.h
+	cgltf/cgltf_write.h
 	cgltf.cpp
 )
 
