@@ -202,7 +202,7 @@ DX11Context::DX11Context(GLFWwindow* window)
 	m_quadMeshAsset = std::make_shared<MeshAsset>(positions, normals, tangents, colors, uv0s, uv1s, indices);
 	m_quadMesh = std::make_shared<StaticMesh>(m_device, m_quadMeshAsset);
 
-	m_cubeMeshAsset = std::make_shared<MeshAsset>("data/meshes/Box.glb");
+	m_cubeMeshAsset = std::make_shared<MeshAsset>("data/meshes/suzanne.glb");
 	m_cubeMesh = std::make_shared<StaticMesh>(m_device, m_cubeMeshAsset);
 
 	//m_twoCubeMeshAsset = std::make_shared<MeshAsset>("data/meshes/two_cubes.glb");
@@ -273,7 +273,7 @@ DX11Context::DX11Context(GLFWwindow* window)
 	int texture_width = 0;
 	int texture_height = 0;
 	int channels = 0;
-	stbi_uc* data = stbi_load("data/textures/placeholder.png", &texture_width, &texture_height, &channels, 4);
+	stbi_uc* data = stbi_load("data/textures/checker.png", &texture_width, &texture_height, &channels, 4);
 
 	ComPtr<ID3D11Texture2D> m_testTexture;
 
@@ -615,7 +615,7 @@ void DX11Context::Render() {
 	float angle = DirectX::XMScalarSin(time);
 	float moveX = 0.5f * DirectX::XMScalarSin(time * 2.0f);
 	float moveY = 0.5f * DirectX::XMScalarSin(time * 2.0f);
-	auto rotMatrix = DirectX::XMMatrixRotationY(angle);
+	auto rotMatrix = DirectX::XMMatrixRotationY(angle + DirectX::XM_PI);
 	//auto rotMatrix = DirectX::XMMatrixTranslation(angle, 0, 0);
 	//auto rotMatrix = DirectX::XMMatrixIdentity();
 
@@ -625,7 +625,7 @@ void DX11Context::Render() {
 	modelToWorld = modelToWorld * rotMatrix;
 	modelToWorld = modelToWorld * transMatrix;
 
-	m_camera->transform.matrix = DirectX::XMMatrixTranslation(0, 0, -1);
+	m_camera->transform.matrix = DirectX::XMMatrixTranslation(0, 0, -3);
 
 	mat4 worldToCam = m_camera->GetView();
 	mat4 CamToProjection = m_camera->GetProjection();
@@ -641,7 +641,7 @@ void DX11Context::Render() {
 	D3D11_MAPPED_SUBRESOURCE pointSubresource;
 	m_deviceContext->Map(m_pointLightBuffer.Get(), 0, D3D11_MAP::D3D11_MAP_WRITE_DISCARD, 0, &pointSubresource);
 	PointLightBuffer* plBuffer = reinterpret_cast<PointLightBuffer*>(pointSubresource.pData);
-	plBuffer->Pos = DirectX::XMFLOAT3(0.0, 0.0f, 0);
+	plBuffer->Pos = DirectX::XMFLOAT3(1.0, 1.0f, -3);
 	plBuffer->Col = DirectX::XMFLOAT3(1.0, 1.0, 1.0);
 	m_deviceContext->Unmap(m_pointLightBuffer.Get(), 0);
 
@@ -671,16 +671,16 @@ void DX11Context::Render() {
 	m_deviceContext->DrawIndexed(m_quadMesh->GetIndexCount(), 0, 0);
 
 	// draw mesh 2
-	// m_deviceContext->IASetVertexBuffers(
-	// 	0, 
-	// 	m_cubeMesh->GetVertexBufferCount(), 
-	// 	m_cubeMesh->GetVertexBuffer().GetAddressOf(), 
-	// 	m_cubeMesh->GetVertexBufferStrides().data(), 
-	// 	m_cubeMesh->GetVertexBufferOffsets().data());
+	m_deviceContext->IASetVertexBuffers(
+		0, 
+		m_cubeMesh->GetVertexBufferCount(), 
+		m_cubeMesh->GetVertexBuffer().GetAddressOf(), 
+		m_cubeMesh->GetVertexBufferStrides().data(), 
+		m_cubeMesh->GetVertexBufferOffsets().data());
 	
-	// m_deviceContext->IASetIndexBuffer(m_cubeMesh->GetIndexBuffer().Get(), m_cubeMesh->GetIndexBufferFormat(), 0);
+	m_deviceContext->IASetIndexBuffer(m_cubeMesh->GetIndexBuffer().Get(), m_cubeMesh->GetIndexBufferFormat(), 0);
 
-	// m_deviceContext->DrawIndexed(m_cubeMesh->GetIndexCount(), 0, 0);
+	m_deviceContext->DrawIndexed(m_cubeMesh->GetIndexCount(), 0, 0);
 
 	m_annotation->BeginEvent(L"ImGui");
 	// Rendering

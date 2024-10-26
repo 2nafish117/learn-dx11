@@ -2,7 +2,6 @@
 
 #include <cgltf/cgltf.h>
 
-
 #pragma region static cgltf strings
 
 static const char* cgltf_buffer_view_type_strings[] = {
@@ -150,8 +149,8 @@ MeshAsset::MeshAsset(std::string_view filePath)
 
 	spdlog::info("loaded mesh {}", filePath);
 
-	// spdlog::info("{}", data->json);
-	// GltfPrintInfo(data);
+	spdlog::info("{}", data->json);
+	GltfPrintInfo(data);
 
 	if(cgltf_load_buffers(&options, data, filePath.data()) != cgltf_result_success) {
 		spdlog::error("failed loading mesh buffers {}", filePath);
@@ -181,37 +180,37 @@ MeshAsset::MeshAsset(std::string_view filePath)
 
 		switch(attribute->type) {
 		case cgltf_attribute_type_position: {
-			cgltf_size count = cgltf_accessor_unpack_floats(attribute->data, nullptr, 3);
-			m_positions.resize(count);
-			count = cgltf_accessor_unpack_floats(attribute->data, reinterpret_cast<cgltf_float*>(m_positions.data()), 3);
+			// cgltf_size count = cgltf_accessor_unpack_floats(attribute->data, nullptr, 0);
+			m_positions.resize(attribute->data->count);
+			(void)cgltf_accessor_unpack_floats(attribute->data, reinterpret_cast<cgltf_float*>(m_positions.data()), 3 * m_positions.size());
 		} break;
 		case cgltf_attribute_type_normal: {
-			cgltf_size count = cgltf_accessor_unpack_floats(attribute->data, nullptr, 3);
-			m_normals.resize(count);
-			count = cgltf_accessor_unpack_floats(attribute->data, reinterpret_cast<cgltf_float*>(m_normals.data()), 3);
+			// cgltf_size count = cgltf_accessor_unpack_floats(attribute->data, nullptr, 0);
+			m_normals.resize(attribute->data->count);
+			(void)cgltf_accessor_unpack_floats(attribute->data, reinterpret_cast<cgltf_float*>(m_normals.data()), 3 * m_normals.size());
 		} break;
 		case cgltf_attribute_type_tangent: {
-			cgltf_size count = cgltf_accessor_unpack_floats(attribute->data, nullptr, 3);
-			m_tangents.resize(count);
-			count = cgltf_accessor_unpack_floats(attribute->data, reinterpret_cast<cgltf_float*>(m_tangents.data()), 3);
+			// cgltf_size count = cgltf_accessor_unpack_floats(attribute->data, nullptr, 0);
+			m_tangents.resize(attribute->data->count);
+			(void)cgltf_accessor_unpack_floats(attribute->data, reinterpret_cast<cgltf_float*>(m_tangents.data()), 3 * m_tangents.size());
 		} break;
 		case cgltf_attribute_type_texcoord: {
 			if(attribute->index == 0) {
-				cgltf_size count = cgltf_accessor_unpack_floats(attribute->data, nullptr, 2);
-				m_uv0s.resize(count);
-				count = cgltf_accessor_unpack_floats(attribute->data, reinterpret_cast<cgltf_float*>(m_uv0s.data()), 2);
+				// cgltf_size count = cgltf_accessor_unpack_floats(attribute->data, nullptr, 0);
+				m_uv0s.resize(attribute->data->count);
+				(void)cgltf_accessor_unpack_floats(attribute->data, reinterpret_cast<cgltf_float*>(m_uv0s.data()), 2 * m_uv0s.size());
 			}
 
 			if(attribute->index == 1) {
-				cgltf_size count = cgltf_accessor_unpack_floats(attribute->data, nullptr, 2);
-				m_uv0s.resize(count);
-				count = cgltf_accessor_unpack_floats(attribute->data, reinterpret_cast<cgltf_float*>(m_uv0s.data()), 2);
+				// cgltf_size count = cgltf_accessor_unpack_floats(attribute->data, nullptr, 0);
+				m_uv1s.resize(attribute->data->count);
+				(void)cgltf_accessor_unpack_floats(attribute->data, reinterpret_cast<cgltf_float*>(m_uv1s.data()), 2 * m_uv1s.size());
 			}
 		} break;
 		case cgltf_attribute_type_color: {
-			cgltf_size count = cgltf_accessor_unpack_floats(attribute->data, nullptr, 3);
-			m_colors.resize(count);
-			count = cgltf_accessor_unpack_floats(attribute->data, reinterpret_cast<cgltf_float*>(m_colors.data()), 3);
+			// cgltf_size count = cgltf_accessor_unpack_floats(attribute->data, nullptr, 0);
+			m_colors.resize(attribute->data->count);
+			(void)cgltf_accessor_unpack_floats(attribute->data, reinterpret_cast<cgltf_float*>(m_colors.data()), 3 * m_colors.size());
 		} break;
 		case cgltf_attribute_type_joints: {
 
@@ -228,6 +227,8 @@ MeshAsset::MeshAsset(std::string_view filePath)
 		} break;
 		};
 	}
+
+	// @TODO: this below is a hack, do better
 
 	// ensure normals exist
 	if(m_positions.size() != m_normals.size()) {
