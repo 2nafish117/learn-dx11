@@ -163,23 +163,47 @@ DX11Context::DX11Context(GLFWwindow* window)
 
 	m_deviceContext->RSSetViewports(1, &m_viewport);
 
-	std::vector<MeshAsset::Vertex> vertices = {
-		MeshAsset::Vertex{ float3(-0.5f, -0.5f, 0.5f), float3(0.0f, 0.0f, -1.0f), float3(0.0f, 0.5f, 0.0f), float2(0.0f, 1.0f) },
-		MeshAsset::Vertex{ float3(0.5f, 0.5f, 0.5f),   float3(0.0f, 0.0f, -1.0f), float3(0.0f, 0.0f, 0.5f), float2(1.0f, 0.0f) },
-		MeshAsset::Vertex{ float3(0.5f, -0.5f, 0.5f),  float3(0.0f, 0.0f, -1.0f), float3(0.0f, 0.0f, 0.5f), float2(1.0f, 1.0f) },
-		MeshAsset::Vertex{ float3(-0.5f, 0.5f, 0.5f),  float3(0.0f, 0.0f, -1.0f), float3(0.5f, 0.0f, 0.0f), float2(0.0f, 0.0f) },
+	// std::vector<StaticMesh::Vertex> vertices = {
+	// 	StaticMesh::Vertex{ float3(-0.5f, -0.5f, 0.5f), float3(0.0f, 0.0f, -1.0f), float3(0.0f, 0.5f, 0.0f), float2(0.0f, 1.0f) },
+	// 	StaticMesh::Vertex{ float3(0.5f, 0.5f, 0.5f),   float3(0.0f, 0.0f, -1.0f), float3(0.0f, 0.0f, 0.5f), float2(1.0f, 0.0f) },
+	// 	StaticMesh::Vertex{ float3(0.5f, -0.5f, 0.5f),  float3(0.0f, 0.0f, -1.0f), float3(0.0f, 0.0f, 0.5f), float2(1.0f, 1.0f) },
+	// 	StaticMesh::Vertex{ float3(-0.5f, 0.5f, 0.5f),  float3(0.0f, 0.0f, -1.0f), float3(0.5f, 0.0f, 0.0f), float2(0.0f, 0.0f) },
+	// };
+
+	std::vector<float3> positions = {
+		float3(-0.5f, -0.5f, 0.5f), float3(0.5f, 0.5f, 0.5f), float3(0.5f, -0.5f, 0.5f), float3(-0.5f, 0.5f, 0.5f)
 	};
+	std::vector<float3> normals = {
+		float3(0.0f, 0.0f, -1.0f),
+		float3(0.0f, 0.0f, -1.0f),
+		float3(0.0f, 0.0f, -1.0f),
+		float3(0.0f, 0.0f, -1.0f),
+	};
+	std::vector<float3> tangents;
+	std::vector<float3> colors = {
+		float3(0.0f, 0.5f, 0.0f),
+		float3(0.0f, 0.0f, 0.5f),
+		float3(0.0f, 0.0f, 0.5f),
+		float3(0.5f, 0.0f, 0.0f),
+	};
+	std::vector<float2> uv0s = {
+		float2(0.0f, 1.0f),
+		float2(1.0f, 0.0f),
+		float2(1.0f, 1.0f),
+		float2(0.0f, 0.0f),
+	};
+	std::vector<float2> uv1s;
 
 	std::vector<u32> indices = {
 		0, 1, 2,
 		0, 3, 1
 	};
 
-	m_quadMeshAsset = std::make_shared<MeshAsset>(vertices, indices);
-	m_quadMesh = std::make_shared<Mesh>(m_device, m_quadMeshAsset);
+	m_quadMeshAsset = std::make_shared<MeshAsset>(positions, normals, tangents, colors, uv0s, uv1s, indices);
+	m_quadMesh = std::make_shared<StaticMesh>(m_device, m_quadMeshAsset);
 
 	m_cubeMeshAsset = std::make_shared<MeshAsset>("data/meshes/Box.glb");
-	m_cubeMesh = std::make_shared<Mesh>(m_device, m_cubeMeshAsset);
+	m_cubeMesh = std::make_shared<StaticMesh>(m_device, m_cubeMeshAsset);
 
 	//m_twoCubeMeshAsset = std::make_shared<MeshAsset>("data/meshes/two_cubes.glb");
 	//m_twoCubeMesh = std::make_shared<Mesh>(m_device, m_twoCubeMeshAsset);
@@ -658,7 +682,7 @@ void DX11Context::Render() {
 	LogDebugInfo();
 }
 
-void DX11Context::Render(std::shared_ptr<Mesh> mesh, std::shared_ptr<VertexShader> shader)
+void DX11Context::Render(std::shared_ptr<StaticMesh> mesh, std::shared_ptr<VertexShader> shader)
 {
 
 }

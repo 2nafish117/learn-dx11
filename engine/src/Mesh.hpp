@@ -13,19 +13,39 @@ struct cgltf_data;
 class MeshAsset {
 
 public:
-	struct Vertex {
-		float3 position;
-		float3 normal;
-		float3 color;
-		float2 uv0;
-	};
-
 	// @TODO: temporary
 	MeshAsset(std::string_view filePath);
-	MeshAsset(const std::vector<Vertex>& vertices, const std::vector<u32>& indices) ;
+	MeshAsset(
+		const std::vector<float3>& positions,
+		const std::vector<float3>& normals, 
+		const std::vector<float3>& tangents,
+		const std::vector<float3>& colors,
+		const std::vector<float2>& uv0s,
+		const std::vector<float2>& uv1s,
+		const std::vector<u32>& indices);
 
-	inline const std::vector<Vertex>& GetVertices() {
-		return m_vertices;
+	inline const std::vector<float3>& GetPositions() {
+		return m_positions;
+	}
+
+	inline const std::vector<float3>& GetNormals() {
+		return m_normals;
+	}
+
+	inline const std::vector<float3>& GetTangents() {
+		return m_tangents;
+	}
+
+	inline const std::vector<float3>& GetColors() {
+		return m_colors;
+	}
+
+	inline const std::vector<float2>& GetUV0s() {
+		return m_uv0s;
+	}
+
+	inline const std::vector<float2>& GetUV1s() {
+		return m_uv1s;
 	}
 
 	inline const std::vector<u32>& GetIndices() {
@@ -43,20 +63,40 @@ private:
 private:
 	std::string_view m_filePath;
 	// @TODO: store vertices in SOA
-	std::vector<Vertex> m_vertices;
+	//std::vector<Vertex> m_vertices;
+	
 	std::vector<u32> m_indices;
+
+	std::vector<float3> m_positions;
+	std::vector<float3> m_normals;
+	std::vector<float3> m_tangents;
+	std::vector<float3> m_colors;
+	std::vector<float2> m_uv0s;
+	std::vector<float2> m_uv1s;
 };
 
-
-class Mesh {
+class StaticMesh {
 	template<typename T>
 	using ComPtr = Microsoft::WRL::ComPtr<T>;
 
-	using VertexType = MeshAsset::Vertex;
-
 public:
+	struct Vertex {
+		float3 position;
+		float3 normal;
+		float3 color;
+		float2 uv0;
+	};
 
-	Mesh(ComPtr<ID3D11Device> device, std::weak_ptr<MeshAsset> asset) 
+	
+	// @TODO: this class should interleave the vertex attributes and give it as a singe vertex ?
+	class VertexGenerator {
+	public:
+	private:
+	};
+
+	using VertexType = Vertex;
+
+	StaticMesh(ComPtr<ID3D11Device> device, std::weak_ptr<MeshAsset> asset) 
 		: m_device(device), m_meshAsset(asset)
 	{
 		CreateBuffers();
@@ -88,7 +128,7 @@ public:
 
 	inline uint GetVertexCount() {
 		if(auto ma = m_meshAsset.lock(); ma != nullptr) {
-			return static_cast<uint>(ma->GetVertices().size());
+			return static_cast<uint>(ma->GetPositions().size());
 		}
 
 		return 0;

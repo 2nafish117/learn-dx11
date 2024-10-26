@@ -18,7 +18,7 @@ class ShaderAsset;
 class MeshAsset;
 class Camera;
 
-class Mesh;
+class StaticMesh;
 class VertexShader;
 class PixelShader;
 
@@ -35,7 +35,7 @@ public:
 
 	void Render();
 
-	void Render(std::shared_ptr<Mesh> mesh, std::shared_ptr<VertexShader> shader);
+	void Render(std::shared_ptr<StaticMesh> mesh, std::shared_ptr<VertexShader> shader);
 
 	void HandleResize(u32 width, u32 height);
 
@@ -98,16 +98,16 @@ private:
 	D3D11_VIEWPORT m_viewport = {};
 
 	std::shared_ptr<MeshAsset> m_quadMeshAsset;
-	std::shared_ptr<Mesh> m_quadMesh; 
+	std::shared_ptr<StaticMesh> m_quadMesh; 
 
 	std::shared_ptr<MeshAsset> m_cubeMeshAsset;
-	std::shared_ptr<Mesh> m_cubeMesh;
+	std::shared_ptr<StaticMesh> m_cubeMesh;
 
 	std::shared_ptr<MeshAsset> m_twoCubeMeshAsset;
-	std::shared_ptr<Mesh> m_twoCubeMesh; 
+	std::shared_ptr<StaticMesh> m_twoCubeMesh; 
 
 	std::shared_ptr<MeshAsset> m_sceneMeshAsset;
-	std::shared_ptr<Mesh> m_sceneMesh;
+	std::shared_ptr<StaticMesh> m_sceneMesh;
 
 	std::shared_ptr<ShaderAsset> m_simpleVertexAsset;
 	std::shared_ptr<ShaderAsset> m_simplePixelAsset;

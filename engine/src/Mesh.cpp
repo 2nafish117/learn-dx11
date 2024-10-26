@@ -135,61 +135,43 @@ static const char* jsmntype_strings[] = {
 MeshAsset::MeshAsset(std::string_view filePath)
 	: m_filePath(filePath)
 {
+	// @TODO: temprary, gltf loader should make meshes and stuff instead, only processing should happen here? or is that file a custom mesh format?
+	spdlog::info("loading mesh {}", filePath);
+
 	// @TODO: customise options
 	cgltf_options options = {};
 	cgltf_data* data = nullptr;
 	cgltf_result result = cgltf_parse_file(&options, filePath.data(), &data);
 
 	if (result != cgltf_result_success) {
+		spdlog::error("failed loading mesh {}", filePath);
 		return;
 	}
+
+	spdlog::error("loaded mesh {}", filePath);
 
 	// spdlog::info("{}", data->json);
-	
-	GltfPrintInfo(data);
+	// GltfPrintInfo(data);
 
 	if(cgltf_load_buffers(&options, data, filePath.data()) != cgltf_result_success) {
+		spdlog::error("failed loading mesh buffers {}", filePath);
 		return;
 	}
 
+	spdlog::error("loaded mesh buffers {}", filePath);
 
-
-
-	// @TODO: temprary
+	ASSERT(data->meshes_count > 0, "");
 	cgltf_mesh* mesh = &data->meshes[0];
+
+	ASSERT(mesh->primitives_count > 0, "");
 	cgltf_primitive* primitive = &mesh->primitives[0];
 
-	// cgltf_accessor_unpack_indices(primitive->indices, nullptr, );
-	ASSERT(primitive->indices->component_type == cgltf_component_type::cgltf_component_type_r_16u, "need u16 indices");
-
-	// data->accessors[0].
-
-	cgltf_size indices_offset = primitive->indices->buffer_view->offset;
-	u16* indices_buffer = reinterpret_cast<u16*>(static_cast<byte*>(primitive->indices->buffer_view->buffer->data) + indices_offset);
-	cgltf_size indices_count = primitive->indices->count;
-
-	m_indices.reserve(indices_count);
-	for(int i = 0;i < indices_count; ++i) {
-		u16 index = indices_buffer[i];
-		m_indices.push_back(index);
+	// get indices
+	{
+		cgltf_size count = cgltf_accessor_unpack_indices(primitive->indices, nullptr, sizeof(u32), 0);
+		m_indices.resize(count);
+		count = cgltf_accessor_unpack_indices(primitive->indices, m_indices.data(), sizeof(u32), m_indices.size());
 	}
-
-	// m_vertices.reserve();
-
-	const byte* positions = nullptr;
-	cgltf_size positions_count = 0;
-
-	const byte* colors = nullptr;
-	cgltf_size colors_count = 0;
-
-	const byte* uvs = nullptr;
-	cgltf_size uvs_count = 0;
-
-	const byte* normals = nullptr;
-	cgltf_size normals_count = 0;
-
-	const byte* tangents = nullptr;
-	cgltf_size tangents_count = 0;
 
 	for(int a = 0; a < mesh->primitives->attributes_count; ++a) {
 		cgltf_attribute* attribute = &mesh->primitives->attributes[a];
@@ -199,39 +181,37 @@ MeshAsset::MeshAsset(std::string_view filePath)
 
 		switch(attribute->type) {
 		case cgltf_attribute_type_position: {
-			ASSERT(attribute->data->type == cgltf_type_vec3, "");
-			ASSERT(attribute->data->component_type == cgltf_component_type_r_32f, "")
-
-			positions_count = attribute->data->count;
-			positions = cgltf_buffer_view_data(buffer_view);
+			cgltf_size count = cgltf_accessor_unpack_floats(attribute->data, nullptr, 3);
+			m_positions.resize(count);
+			count = cgltf_accessor_unpack_floats(attribute->data, reinterpret_cast<cgltf_float*>(m_positions.data()), 3);
 		} break;
 		case cgltf_attribute_type_normal: {
-			ASSERT(attribute->data->type == cgltf_type_vec3, "");
-			ASSERT(attribute->data->component_type == cgltf_component_type_r_32f, "")
-			
-			normals_count = attribute->data->count;
-			normals = cgltf_buffer_view_data(buffer_view);
+			cgltf_size count = cgltf_accessor_unpack_floats(attribute->data, nullptr, 3);
+			m_normals.resize(count);
+			count = cgltf_accessor_unpack_floats(attribute->data, reinterpret_cast<cgltf_float*>(m_normals.data()), 3);
 		} break;
 		case cgltf_attribute_type_tangent: {
-			ASSERT(attribute->data->type == cgltf_type_vec3, "");
-			ASSERT(attribute->data->component_type == cgltf_component_type_r_32f, "")
-			
-			tangents_count = attribute->data->count;
-			tangents = cgltf_buffer_view_data(buffer_view);
+			cgltf_size count = cgltf_accessor_unpack_floats(attribute->data, nullptr, 3);
+			m_tangents.resize(count);
+			count = cgltf_accessor_unpack_floats(attribute->data, reinterpret_cast<cgltf_float*>(m_tangents.data()), 3);
 		} break;
 		case cgltf_attribute_type_texcoord: {
-			ASSERT(attribute->data->type == cgltf_type_vec2, "");
-			ASSERT(attribute->data->component_type == cgltf_component_type_r_32f, "")
-			
-			uvs_count = attribute->data->count;
-			uvs = cgltf_buffer_view_data(buffer_view);
+			if(attribute->index == 0) {
+				cgltf_size count = cgltf_accessor_unpack_floats(attribute->data, nullptr, 2);
+				m_uv0s.resize(count);
+				count = cgltf_accessor_unpack_floats(attribute->data, reinterpret_cast<cgltf_float*>(m_uv0s.data()), 2);
+			}
+
+			if(attribute->index == 1) {
+				cgltf_size count = cgltf_accessor_unpack_floats(attribute->data, nullptr, 2);
+				m_uv0s.resize(count);
+				count = cgltf_accessor_unpack_floats(attribute->data, reinterpret_cast<cgltf_float*>(m_uv0s.data()), 2);
+			}
 		} break;
 		case cgltf_attribute_type_color: {
-			ASSERT(attribute->data->type == cgltf_type_vec3, "");
-			ASSERT(attribute->data->component_type == cgltf_component_type_r_32f, "")
-			
-			colors_count = attribute->data->count;
-			colors = cgltf_buffer_view_data(buffer_view);
+			cgltf_size count = cgltf_accessor_unpack_floats(attribute->data, nullptr, 3);
+			m_colors.resize(count);
+			count = cgltf_accessor_unpack_floats(attribute->data, reinterpret_cast<cgltf_float*>(m_colors.data()), 3);
 		} break;
 		case cgltf_attribute_type_joints: {
 
@@ -249,27 +229,73 @@ MeshAsset::MeshAsset(std::string_view filePath)
 		};
 	}
 
-	ASSERT(positions_count == colors_count, "");
-	ASSERT(positions_count == uvs_count, "");
-	ASSERT(positions_count == normals_count, "");
-	ASSERT(positions_count == tangents_count, "");	
+	// ensure normals exist
+	if(m_positions.size() != m_normals.size()) {
+		m_normals.resize(m_positions.size());
+		// @TODO: calculate normals
+	}
+
+	// ensure colors exist
+	if(m_positions.size() != m_colors.size()) {
+		m_colors.resize(m_positions.size());
+		memset(m_colors.data(), 0, m_colors.size() * sizeof(float3));
+	}
+
+	// ensure uv0s exist
+	if(m_positions.size() != m_uv0s.size()) {
+		m_uv0s.resize(m_positions.size());
+		memset(m_uv0s.data(), 0, m_uv0s.size() * sizeof(float2));
+	}
+
+	ASSERT(m_positions.size() == m_normals.size(), "");
+	// ASSERT(m_positions.size() == m_tangents.size(), "");
+	ASSERT(m_positions.size() == m_colors.size(), "");
+	ASSERT(m_positions.size() == m_uv0s.size(), "");
+	// ASSERT(m_positions.size() == m_uv1s.size(), "");
 
 	cgltf_free(data);
+	spdlog::error("processed mesh {}", filePath);
 }
 
-MeshAsset::MeshAsset(const std::vector<Vertex>& vertices, const std::vector<u32>& indices) 
-	: m_vertices(vertices), m_indices(indices)
+MeshAsset::MeshAsset(
+	const std::vector<float3>& positions,
+	const std::vector<float3>& normals, 
+	const std::vector<float3>& tangents,
+	const std::vector<float3>& colors,
+	const std::vector<float2>& uv0s,
+	const std::vector<float2>& uv1s,
+	const std::vector<u32>& indices)
+	: m_positions(positions), m_normals(normals), m_tangents(tangents), m_colors(colors), m_uv0s(uv0s), m_uv1s(uv1s), m_indices(indices)
 {
-	
+
 }
 
-
-void Mesh::CreateBuffers()
+void StaticMesh::CreateBuffers()
 {
     if(auto ma = m_meshAsset.lock(); ma != nullptr) {
 
-        const std::vector<VertexType>& vertices = ma->GetVertices();
+		const std::vector<float3>& positions = ma->GetPositions();
+		const std::vector<float3>& normals = ma->GetNormals();
+		const std::vector<float3>& tangents = ma->GetTangents();
+		const std::vector<float3>& colors = ma->GetColors();
+		const std::vector<float2>& uv0s = ma->GetUV0s();
+		const std::vector<float2>& uv1s = ma->GetUV1s();
+
         const std::vector<u32>& indices = ma->GetIndices();
+
+		std::vector<VertexType> vertices;
+		vertices.reserve(positions.size());
+
+		for(int i = 0;i < positions.size(); ++i) {
+			vertices.emplace_back(
+				VertexType{
+					.position = positions[i],
+					.normal = normals[i],
+					.color = colors[i],
+					.uv0 = uv0s[i],
+				}
+			);
+		}
 
         D3D11_BUFFER_DESC vertBufferDesc = {
             .ByteWidth = static_cast<UINT>(sizeof(VertexType) * vertices.size()),
