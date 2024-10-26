@@ -68,22 +68,26 @@ protected:
         : m_device(device), m_shaderAsset(asset) {}
 };
 
-
 class ShaderCompiler {
 private:
     template<typename T>
     using ComPtr = Microsoft::WRL::ComPtr<T>;
 
 public:
-    ShaderCompiler(std::unique_ptr<ID3DInclude>&& includer = nullptr) 
-        : m_includer(std::move(includer))
+    ShaderCompiler(ID3DInclude* includer = nullptr) 
+        : m_includer(includer)
     {}
+
+	~ShaderCompiler() {
+		if(m_includer != nullptr) {
+			delete m_includer;
+		}
+	}
 
     bool CompileShaderAsset(std::weak_ptr<ShaderAsset> asset);
 
 private:
-	// @TODO: this is supposed to be a com ptr!!!!?
-	std::unique_ptr<ID3DInclude> m_includer;
+	ID3DInclude* m_includer;
 
 	struct CompiledResult {
 		ComPtr<ID3DBlob> blob;
@@ -95,7 +99,6 @@ private:
 		std::string_view target, 
 		const std::vector<D3D_SHADER_MACRO>& defines);
 };
-
 
 // @TODO: implement the shader includer
 class ShaderIncluder : public ID3DInclude {

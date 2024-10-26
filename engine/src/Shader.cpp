@@ -48,7 +48,7 @@ ShaderCompiler::CompiledResult ShaderCompiler::CompileShader(
 	// @TODO: extract defines as needed
 	D3D_SHADER_MACRO* exDefines = nullptr;
 
-	if (auto res = D3DCompileFromFile(filePath.data(), exDefines, m_includer.get(), entryFunc.data(), target.data(), flags1, flags2, &compiled.blob, &compiled.error); FAILED(res)) {
+	if (auto res = D3DCompileFromFile(filePath.data(), exDefines, m_includer, entryFunc.data(), target.data(), flags1, flags2, &compiled.blob, &compiled.error); FAILED(res)) {
 		DXERROR(res);
 	}
 

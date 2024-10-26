@@ -214,8 +214,7 @@ DX11Context::DX11Context(GLFWwindow* window)
 	m_simpleVertexAsset = std::make_shared<ShaderAsset>(L"data/shaders/simple_vs.hlsl", "VSMain", "vs_5_0");
 	m_simplePixelAsset = std::make_shared<ShaderAsset>(L"data/shaders/simple_ps.hlsl", "PSMain", "ps_5_0");
 
-	std::unique_ptr<ID3DInclude> includer = std::make_unique<ShaderIncluder>();
-	m_shaderCompiler = std::make_unique<ShaderCompiler>(std::move(includer));
+	m_shaderCompiler = std::make_unique<ShaderCompiler>(new ShaderIncluder());
 
 	m_shaderCompiler->CompileShaderAsset(m_simpleVertexAsset);
 	m_shaderCompiler->CompileShaderAsset(m_simplePixelAsset);
