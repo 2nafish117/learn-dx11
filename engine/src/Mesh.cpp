@@ -148,7 +148,7 @@ MeshAsset::MeshAsset(std::string_view filePath)
 		return;
 	}
 
-	spdlog::error("loaded mesh {}", filePath);
+	spdlog::info("loaded mesh {}", filePath);
 
 	// spdlog::info("{}", data->json);
 	// GltfPrintInfo(data);
@@ -158,7 +158,7 @@ MeshAsset::MeshAsset(std::string_view filePath)
 		return;
 	}
 
-	spdlog::error("loaded mesh buffers {}", filePath);
+	spdlog::info("loaded mesh buffers {}", filePath);
 
 	ASSERT(data->meshes_count > 0, "");
 	cgltf_mesh* mesh = &data->meshes[0];
@@ -254,7 +254,7 @@ MeshAsset::MeshAsset(std::string_view filePath)
 	// ASSERT(m_positions.size() == m_uv1s.size(), "");
 
 	cgltf_free(data);
-	spdlog::error("processed mesh {}", filePath);
+	spdlog::info("processed mesh {}", filePath);
 }
 
 MeshAsset::MeshAsset(

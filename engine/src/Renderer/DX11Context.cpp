@@ -495,7 +495,7 @@ void DX11Context::CreateDeviceAndContext(UINT createFlags) {
 
 	D3D_FEATURE_LEVEL supportedFeatureLevel = (D3D_FEATURE_LEVEL)0;
 
-	HRESULT res = D3D11CreateDevice(
+	if (auto res = D3D11CreateDevice(
 		m_selectedAdapter.Get(),
 		D3D_DRIVER_TYPE::D3D_DRIVER_TYPE_UNKNOWN,
 		nullptr,
@@ -506,9 +506,7 @@ void DX11Context::CreateDeviceAndContext(UINT createFlags) {
 		&m_device,
 		&supportedFeatureLevel,
 		&m_deviceContext
-	);
-
-	if (FAILED(res)) {
+	); FAILED(res)) {
 		DXERROR(res);
 	}
 
@@ -516,8 +514,13 @@ void DX11Context::CreateDeviceAndContext(UINT createFlags) {
 	spdlog::info("created device and device context");
 
 #if _DEBUG
-	m_device->QueryInterface(IID_PPV_ARGS(&m_debugInfoQueue));
+	if(auto res = m_device->QueryInterface(IID_PPV_ARGS(&m_debugInfoQueue)); FAILED(res)) {
+		DXERROR(res);
+	}
 #endif
+	if(auto res = m_deviceContext->QueryInterface(IID_PPV_ARGS(&m_annotation)); FAILED(res)) {
+		DXERROR(res);
+	}
 }
 
 void DX11Context::CreateSwapchain(GLFWwindow* window, u32 bufferCount) {
@@ -643,6 +646,7 @@ void DX11Context::Render() {
 	plBuffer->Col = DirectX::XMFLOAT3(1.0, 1.0, 1.0);
 	m_deviceContext->Unmap(m_pointLightBuffer.Get(), 0);
 
+	// draw mesh 1
 	m_deviceContext->IASetVertexBuffers(
 		0, 
 		m_quadMesh->GetVertexBufferCount(), 
@@ -667,12 +671,26 @@ void DX11Context::Render() {
 
 	m_deviceContext->DrawIndexed(m_quadMesh->GetIndexCount(), 0, 0);
 
+	// draw mesh 2
+	// m_deviceContext->IASetVertexBuffers(
+	// 	0, 
+	// 	m_cubeMesh->GetVertexBufferCount(), 
+	// 	m_cubeMesh->GetVertexBuffer().GetAddressOf(), 
+	// 	m_cubeMesh->GetVertexBufferStrides().data(), 
+	// 	m_cubeMesh->GetVertexBufferOffsets().data());
+	
+	// m_deviceContext->IASetIndexBuffer(m_cubeMesh->GetIndexBuffer().Get(), m_cubeMesh->GetIndexBufferFormat(), 0);
+
+	// m_deviceContext->DrawIndexed(m_cubeMesh->GetIndexCount(), 0, 0);
+
+	m_annotation->BeginEvent(L"ImGui");
 	// Rendering
 	// (Your code clears your framebuffer, renders your other stuff etc.)
 	ImGui::Render();
 
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 	// (Your code calls swapchain's Present() function)
+	m_annotation->EndEvent();
 
 	// end render
 	// vsync enabled

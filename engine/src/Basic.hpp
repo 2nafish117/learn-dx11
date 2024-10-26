@@ -49,3 +49,20 @@ using uint = unsigned int;
 
 using f32 = float;
 using f64 = double;
+
+using unique_defer = std::unique_ptr<void, std::function<void(void*)>>;
+
+#define defer(name, expressions) unique_defer name((void*)1, [&](...){ {expressions} })
+// usage
+// int main(void)
+// {
+// 	int x = 0;
+// 	defer(_d1, 
+// 		spdlog::info(", World!");
+// 		spdlog::info(", yo works!");
+// 		x += 1;
+
+// 		spdlog::info("Hello x={}", x);
+// 	);
+// 	spdlog::info("Hello x={}", x);
+// }

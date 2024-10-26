@@ -1,6 +1,6 @@
 #pragma once
 
-#include <d3d11.h>
+#include <d3d11_1.h>
 #include <wrl.h>
 #include <dxgi1_6.h>
 #include <d3dcompiler.h>
@@ -83,6 +83,9 @@ private:
 	ComPtr<ID3D11Debug> m_debug;
 	ComPtr<ID3D11InfoQueue> m_debugInfoQueue;
 #endif
+	ComPtr<ID3DUserDefinedAnnotation> m_annotation; 
+	// @TODO: use ID3DUserDefinedAnnotation for perf captures? replace D3DPERF_BeginEvent, D3DPERF_EndEvent, D3DPERF_SetMarker 
+	// ComPtr
 
 	ComPtr<ID3D11Device> m_device;
 	ComPtr<ID3D11DeviceContext> m_deviceContext;

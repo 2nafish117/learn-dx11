@@ -82,6 +82,7 @@ public:
     bool CompileShaderAsset(std::weak_ptr<ShaderAsset> asset);
 
 private:
+	// @TODO: this is supposed to be a com ptr!!!!?
 	std::unique_ptr<ID3DInclude> m_includer;
 
 	struct CompiledResult {
