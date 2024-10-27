@@ -591,15 +591,18 @@ void DX11Context::ResizeSwapchainResources(u32 width, u32 height) {
 
 void DX11Context::Render() {
 
-
 	ImGui_ImplDX11_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
+
 	ImGui::ShowDemoWindow();
 
+	// ImGui::Begin("the name", nullptr, ImGuiWindowFlags_DockNodeHost);
+	
+	// ImGui::End();
 
 	// begin render
-	const float clearColor[4] = {0.1f, 0.1f, 0.1f, 1.0f};
+	const float clearColor[4] = {0.2f, 0.1f, 0.1f, 1.0f};
 	m_deviceContext->ClearRenderTargetView(m_renderTargetView.Get(), clearColor);
 	m_deviceContext->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
@@ -675,18 +678,21 @@ void DX11Context::Render() {
 	m_deviceContext->DrawIndexed(m_cubeMesh->GetIndexCount(), 0, 0);
 
 	m_annotation->BeginEvent(L"ImGui");
-	// Rendering
-	// (Your code clears your framebuffer, renders your other stuff etc.)
 	ImGui::Render();
-
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-	// (Your code calls swapchain's Present() function)
+
+	// Update and Render additional Platform Windows
+	// if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+	{
+		ImGui::UpdatePlatformWindows();
+		ImGui::RenderPlatformWindowsDefault();
+	}
+
 	m_annotation->EndEvent();
 
 	// end render
 	// vsync enabled
 	m_swapchain->Present(0, 0);
-	//spdlog::info("rendering");
 
 	LogDebugInfo();
 }
@@ -700,7 +706,6 @@ void DX11Context::HandleResize(u32 width, u32 height)
 {
 	ResizeSwapchainResources(width, height);
 
-
 	//m_depthStencilView.Reset();
 	//m_depthStencilTexture.Reset();
 	//m_device->CreateTexture2D()
@@ -713,8 +718,9 @@ void DX11Context::InitImgui() {
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // IF using Docking Branch
+	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
-	// style imgui
+	// imgui font
 	{
 		ImFontConfig font_config = {};
 
@@ -741,10 +747,16 @@ void DX11Context::InitImgui() {
 		font_config.RasterizerMultiply = 1.0;
 		font_config.GlyphOffset = ImVec2{0.0, -1.0};
 
+		// @TODO: need more fonts?
 		// io.Fonts->AddFontFromFileTTF("assets/fa-regular-400.ttf", 14.0, &font_config, FA_RANGES);
 
 		font_config.MergeMode = false;
+	}
 
+	// style imgui
+	// @TODO: not highlight state on buttons with this style, fix.
+	if(0)
+	{
 		ImGuiStyle& style = ImGui::GetStyle();
 
 		const ImVec4 tone_text_1 = {0.69f, 0.69f, 0.69f, 1.0f};
