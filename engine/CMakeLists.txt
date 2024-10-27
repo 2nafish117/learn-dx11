@@ -39,6 +39,7 @@ target_link_libraries(${TARGET_NAME}
 	stb
 	imgui
 	cgltf
+	flags
 )
 
 # @TODO: if assets change, i need a recopy

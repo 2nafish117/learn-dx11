@@ -24,3 +24,6 @@ add_subdirectory(stb)
 
 # imgui stuff
 add_subdirectory(imgui)
+
+# flags arg parser stuff
+add_subdirectory(flags-1.1)

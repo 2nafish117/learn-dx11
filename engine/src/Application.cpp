@@ -1,7 +1,7 @@
 #include "Application.hpp"
 
-
 #include <spdlog/spdlog.h>
+#include <flags.h>
 
 #include "Renderer/DX11Context.hpp"
 #include "Shader.hpp"
@@ -20,19 +20,21 @@ void WindowSizeCallback(GLFWwindow* window, int width, int height) {
 
 #pragma endregion
 
-Application::Application()
+Application::Application(int argc, char** argv)
 {
 	// https://github.com/gabime/spdlog/wiki/3.-Custom-formatting#pattern-flags
 	spdlog::set_level(spdlog::level::trace);
     spdlog::set_pattern("[%H:%M:%S.%e] [%^%L%$] [thread %t] %v");
 	spdlog::info("Logging initialised");
 
-	// spdlog::trace("log trace");
-	// spdlog::info("log info");
-	// spdlog::debug("log debug");
-	// spdlog::warn("log warn");
-	// spdlog::error("log error");
-	// spdlog::critical("log critical");
+	// https://github.com/sailormoon/flags/
+	const flags::args args(argc, argv);
+
+	const auto dataDir = args.get<std::string_view>("data_dir");
+	if(dataDir.has_value()) {
+		spdlog::info("using data directory: {}", *dataDir);
+		m_dataDir = *dataDir;
+	}
 }
 
 Application::~Application()

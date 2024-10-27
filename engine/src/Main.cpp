@@ -1,9 +1,8 @@
 #include "Application.hpp"
 
-int main(void)
+int main(int argc, char** argv)
 {
-	// @TODO: cmd line args
 	// @TODO: config file?
-	Application app;
+	Application app(argc, argv);
 	return app.Run();
 }
