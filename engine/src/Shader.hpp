@@ -80,7 +80,8 @@ public:
 
 	~ShaderCompiler() {
 		if(m_includer != nullptr) {
-			delete m_includer;
+			// let it leak, who cares, atleast im not dealing with undefined behaviour
+			// delete m_includer;
 		}
 	}
 

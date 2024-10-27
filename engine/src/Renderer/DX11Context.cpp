@@ -359,15 +359,7 @@ DX11Context::DX11Context(GLFWwindow* window)
 		DXERROR(res);
 	}
 
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO();
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // IF using Docking Branch
-
-	ImGui_ImplGlfw_InitForOther(m_window, true);
-	ImGui_ImplDX11_Init(GetDevice().Get(), GetDeviceContext().Get());
+	InitImgui();
 }
 
 DX11Context::~DX11Context()
@@ -712,4 +704,143 @@ void DX11Context::HandleResize(u32 width, u32 height)
 	//m_depthStencilView.Reset();
 	//m_depthStencilTexture.Reset();
 	//m_device->CreateTexture2D()
+}
+
+void DX11Context::InitImgui() {
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO();
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // IF using Docking Branch
+
+	// style imgui
+	{
+		ImFontConfig font_config = {};
+
+		font_config.FontDataOwnedByAtlas = true;
+		font_config.OversampleH = 6;
+		font_config.OversampleV = 6;
+		font_config.GlyphMaxAdvanceX = std::numeric_limits<float>::max();
+		font_config.RasterizerMultiply = 1.4f;
+		font_config.RasterizerDensity = 1.0f;
+		font_config.EllipsisChar = std::numeric_limits<u16>::max();
+
+		font_config.PixelSnapH = false;
+		font_config.GlyphOffset = ImVec2{0.0, -1.0};
+
+		io.Fonts->AddFontFromFileTTF("C:/Windows/Fonts/segoeui.ttf", 18.0f, &font_config);
+
+		font_config.MergeMode = true;
+
+		const u16 ICON_MIN_FA = 0xe005;
+		const u16 ICON_MAX_FA = 0xf8ff;
+
+		static u16 FA_RANGES[3] = {ICON_MIN_FA, ICON_MAX_FA, 0};
+
+		font_config.RasterizerMultiply = 1.0;
+		font_config.GlyphOffset = ImVec2{0.0, -1.0};
+
+		// io.Fonts->AddFontFromFileTTF("assets/fa-regular-400.ttf", 14.0, &font_config, FA_RANGES);
+
+		font_config.MergeMode = false;
+
+		ImGuiStyle& style = ImGui::GetStyle();
+
+		const ImVec4 tone_text_1 = {0.69f, 0.69f, 0.69f, 1.0f};
+		const ImVec4 tone_text_2 = {0.69f, 0.69f, 0.69f, 0.8f};
+
+		ImVec4 tone_1 = {0.16f, 0.16f, 0.28f, 1.0f};
+		ImVec4 tone_1_b = {tone_1.x * 1.2f, tone_1.y * 1.2f, tone_1.z * 1.2f, tone_1.w * 1.2f};
+		ImVec4 tone_1_e = {tone_1.x * 1.2f, tone_1.y * 1.2f, tone_1.z * 1.2f, tone_1.w * 1.2f};
+		ImVec4 tone_1_e_a = tone_1_e;
+		ImVec4 tone_3 = {0.11f, 0.11f, 0.18f, 1.0};
+		ImVec4 tone_2 = tone_3;
+		ImVec4 tone_2_b = tone_2;
+
+		style.Colors[ImGuiCol_Text] = tone_text_1;
+		style.Colors[ImGuiCol_TextDisabled] = tone_text_2;
+		style.Colors[ImGuiCol_WindowBg] = tone_1;
+		style.Colors[ImGuiCol_ChildBg] = tone_2;
+		style.Colors[ImGuiCol_PopupBg] = tone_2_b;
+		style.Colors[ImGuiCol_Border] = tone_2;
+		style.Colors[ImGuiCol_BorderShadow] = {0.0, 0.0, 0.0, 0.0};
+		style.Colors[ImGuiCol_FrameBg] = tone_3;
+		style.Colors[ImGuiCol_FrameBgHovered] = tone_3;
+		style.Colors[ImGuiCol_FrameBgActive] = tone_3;
+		style.Colors[ImGuiCol_TitleBg] = tone_2;
+		style.Colors[ImGuiCol_TitleBgActive] = tone_2;
+		style.Colors[ImGuiCol_TitleBgCollapsed] = tone_2;
+		style.Colors[ImGuiCol_MenuBarBg] = tone_2;
+		style.Colors[ImGuiCol_ScrollbarBg] = tone_3;
+		style.Colors[ImGuiCol_ScrollbarGrab] = tone_1_e;
+		style.Colors[ImGuiCol_ScrollbarGrabHovered] = tone_1_e;
+		style.Colors[ImGuiCol_ScrollbarGrabActive] = tone_1_e_a;
+		style.Colors[ImGuiCol_CheckMark] = tone_1_e;
+		style.Colors[ImGuiCol_SliderGrab] = tone_1_e;
+		style.Colors[ImGuiCol_SliderGrabActive] = tone_1_e_a;
+		style.Colors[ImGuiCol_Button] = tone_2;
+		style.Colors[ImGuiCol_ButtonHovered] = tone_2;
+		style.Colors[ImGuiCol_ButtonActive] = tone_3;
+		style.Colors[ImGuiCol_Header] = tone_2;
+		style.Colors[ImGuiCol_HeaderHovered] = tone_2;
+		style.Colors[ImGuiCol_HeaderActive] = tone_2;
+		style.Colors[ImGuiCol_Separator] = tone_2;
+		style.Colors[ImGuiCol_SeparatorHovered] = tone_2;
+		style.Colors[ImGuiCol_SeparatorActive] = tone_2;
+		style.Colors[ImGuiCol_ResizeGrip] = {0.0, 0.0, 0.0, 0.0};
+		style.Colors[ImGuiCol_ResizeGripHovered] = {0.0, 0.0, 0.0, 0.0};
+		style.Colors[ImGuiCol_ResizeGripActive] = {0.0, 0.0, 0.0, 0.0};
+		style.Colors[ImGuiCol_Tab] = tone_2;
+		style.Colors[ImGuiCol_TabHovered] = tone_1;
+		style.Colors[ImGuiCol_TabActive] = tone_1;
+		style.Colors[ImGuiCol_TabUnfocused] = tone_1;
+		style.Colors[ImGuiCol_TabUnfocusedActive] = tone_1;
+		style.Colors[ImGuiCol_PlotLines] = tone_1_e;
+		style.Colors[ImGuiCol_PlotLinesHovered] = tone_2;
+		style.Colors[ImGuiCol_PlotHistogram] = tone_1_e;
+		style.Colors[ImGuiCol_PlotHistogramHovered] = tone_2;
+		style.Colors[ImGuiCol_TableHeaderBg] = tone_2;
+		style.Colors[ImGuiCol_TableBorderStrong] = tone_2;
+		style.Colors[ImGuiCol_TableBorderLight] = tone_2;
+		style.Colors[ImGuiCol_TableRowBg] = tone_2;
+		style.Colors[ImGuiCol_TableRowBgAlt] = tone_1;
+		style.Colors[ImGuiCol_TextSelectedBg] = tone_1_e;
+		style.Colors[ImGuiCol_DragDropTarget] = tone_2;
+		style.Colors[ImGuiCol_NavHighlight] = tone_2;
+		style.Colors[ImGuiCol_NavWindowingHighlight] = tone_2;
+		style.Colors[ImGuiCol_NavWindowingDimBg] = tone_2_b;
+		style.Colors[ImGuiCol_ModalWindowDimBg] = {tone_2_b.x * 0.5f, tone_2_b.y * 0.5f, tone_2_b.z * 0.5f, tone_2_b.w * 0.5f};
+
+		style.Colors[ImGuiCol_DockingPreview] = {1.0, 1.0, 1.0, 0.5};
+		style.Colors[ImGuiCol_DockingEmptyBg] = {0.0, 0.0, 0.0, 0.0};
+
+		style.WindowPadding = {10.00, 10.00};
+		style.FramePadding = {5.00, 5.00};
+		style.CellPadding = {2.50, 2.50};
+		style.ItemSpacing = {5.00, 5.00};
+		style.ItemInnerSpacing = {5.00, 5.00};
+		style.TouchExtraPadding = {5.00, 5.00};
+		style.IndentSpacing = 10;
+		style.ScrollbarSize = 15;
+		style.GrabMinSize = 10;
+		style.WindowBorderSize = 0;
+		style.ChildBorderSize = 0;
+		style.PopupBorderSize = 0;
+		style.FrameBorderSize = 0;
+		style.TabBorderSize = 0;
+		style.WindowRounding = 10;
+		style.ChildRounding = 5;
+		style.FrameRounding = 5;
+		style.PopupRounding = 5;
+		style.GrabRounding = 5;
+		style.ScrollbarRounding = 10;
+		style.LogSliderDeadzone = 5;
+		style.TabRounding = 5;
+		style.DockingSeparatorSize = 5;
+	}
+
+
+	ImGui_ImplGlfw_InitForOther(m_window, true);
+	ImGui_ImplDX11_Init(GetDevice().Get(), GetDeviceContext().Get());
 }

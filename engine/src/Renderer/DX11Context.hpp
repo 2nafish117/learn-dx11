@@ -1,5 +1,7 @@
 #pragma once
 
+// windows defines min and max as macros, disable with this, wtf???!! why!!??
+#define NOMINMAX
 #include <d3d11_1.h>
 #include <wrl.h>
 #include <dxgi1_6.h>
@@ -7,6 +9,7 @@
 #include <d3dcommon.h>
 #include <directxmath.h>
 #include <stb/stb_image.h>
+
 
 #include "Basic.hpp"
 #include "Math.hpp"
@@ -38,6 +41,8 @@ public:
 	void Render(std::shared_ptr<StaticMesh> mesh, std::shared_ptr<VertexShader> shader);
 
 	void HandleResize(u32 width, u32 height);
+
+	void InitImgui();
 
 	ComPtr<ID3D11Device> GetDevice() {
 		return m_device;
