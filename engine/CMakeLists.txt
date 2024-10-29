@@ -42,6 +42,11 @@ target_link_libraries(${TARGET_NAME}
 	flags
 )
 
+# Set the debugger arguments for Visual Studio
+set_target_properties(${TARGET_NAME} PROPERTIES
+    VS_DEBUGGER_COMMAND_ARGUMENTS ""
+)
+
 # @TODO: if assets change, i need a recopy
 # @TODO: is it possible to just avoid this copy instead?? maybe pass a cmd line path to the data dir
 add_custom_command(TARGET ${TARGET_NAME} 
