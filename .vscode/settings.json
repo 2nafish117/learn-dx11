@@ -78,6 +78,7 @@
 		"string": "cpp",
 		"valarray": "cpp",
 		"variant": "cpp",
-		"regex": "cpp"
+		"regex": "cpp",
+		"xstddef": "cpp"
 	}
 }

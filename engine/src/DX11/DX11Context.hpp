@@ -8,8 +8,6 @@
 #include <d3dcompiler.h>
 #include <d3dcommon.h>
 #include <directxmath.h>
-#include <stb/stb_image.h>
-
 
 #include "Basic.hpp"
 #include "Math.hpp"
@@ -19,6 +17,7 @@ struct GLFWwindow;
 
 class ShaderAsset;
 class MeshAsset;
+class TextureAsset;
 class Camera;
 
 class StaticMesh;
@@ -26,6 +25,10 @@ class VertexShader;
 class PixelShader;
 
 class ShaderCompiler;
+
+#ifdef _DEBUG
+#define DX11_DEBUG
+#endif
 
 class DX11Context {
 	template<typename T>
@@ -84,7 +87,7 @@ private:
 	ComPtr<IDXGISwapChain1> m_swapchain;
 
 	// @TODO: use the debug interface
-#if _DEBUG
+#ifdef DX11_DEBUG
 	ComPtr<ID3D11Debug> m_debug;
 	ComPtr<ID3D11InfoQueue> m_debugInfoQueue;
 #endif
@@ -122,6 +125,8 @@ private:
 
 	std::shared_ptr<VertexShader> m_simpleVertex;
 	std::shared_ptr<PixelShader> m_simplePixel;
+
+	std::shared_ptr<TextureAsset> m_testTexAsset;
 
 	std::unique_ptr<ShaderCompiler> m_shaderCompiler;
 

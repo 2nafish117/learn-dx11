@@ -14,9 +14,6 @@ PRIVATE
 	Scene.hpp
 	Scene.cpp
 	
-	Mesh.hpp
-	Mesh.cpp
-	
 	Camera.hpp
 	Camera.cpp
 	
@@ -25,8 +22,12 @@ PRIVATE
 
 	Importers.cpp
 	Importers.hpp
+
+	AssetSystem.cpp
+	AssetSystem.hpp
 )
 
+add_subdirectory(DX11)
 add_subdirectory(Renderer)
 
 target_include_directories(${TARGET_NAME}

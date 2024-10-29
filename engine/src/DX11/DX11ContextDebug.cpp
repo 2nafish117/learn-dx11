@@ -1,6 +1,6 @@
 #include "DX11Context.hpp"
 
-#ifdef _DEBUG
+#ifdef DX11_DEBUG
 
 void DX11Context::LogDebugInfo()
 {

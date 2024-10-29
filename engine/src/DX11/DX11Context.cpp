@@ -10,7 +10,8 @@
 
 #include <comdef.h>
 
-#include "Mesh.hpp"
+#include "StaticMesh.hpp"
+#include "Texture.hpp"
 #include "Shader.hpp"
 #include "Camera.hpp"
 
@@ -25,7 +26,7 @@ DX11Context::DX11Context(GLFWwindow* window)
 	UINT factoryCreateFlags = 0;
 
 // @TODO: make a DXDEBUG flag
-#ifdef _DEBUG
+#ifdef DX11_DEBUG
 	factoryCreateFlags |= D3D11_CREATE_DEVICE_FLAG::D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
@@ -47,13 +48,13 @@ DX11Context::DX11Context(GLFWwindow* window)
 	m_selectedOutput = PickOutput(outputs);
 
 	UINT deviceCreateFlags = 0;
-#ifdef _DEBUG
+#ifdef DX11_DEBUG
 	deviceCreateFlags |= D3D11_CREATE_DEVICE_FLAG::D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
 	CreateDeviceAndContext(deviceCreateFlags);
 
-#if _DEBUG
+#ifdef DX11_DEBUG
 	if (auto res = m_device->QueryInterface(IID_PPV_ARGS(&m_debug)); FAILED(res)) {
 		DXERROR(res);
 	}
@@ -270,38 +271,9 @@ DX11Context::DX11Context(GLFWwindow* window)
 
 	m_deviceContext->IASetInputLayout(m_inputLayout.Get());
 
-	int texture_width = 0;
-	int texture_height = 0;
-	int channels = 0;
-	stbi_uc* data = stbi_load("data/textures/checker.png", &texture_width, &texture_height, &channels, 4);
+	m_testTexAsset = std::make_shared<TextureAsset>("textures/checker.png");
 
-	ComPtr<ID3D11Texture2D> m_testTexture;
-
-	D3D11_TEXTURE2D_DESC testTextureDesc = {
-		.Width = static_cast<UINT>(texture_width),
-		.Height = static_cast<UINT>(texture_height),
-		// @TODO: 1 for multisampled???
-		.MipLevels = 1,
-		.ArraySize = 1,
-		.Format = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM,
-		.SampleDesc = {
-			.Count = 1,
-			.Quality = 0,
-		},
-		.Usage = D3D11_USAGE::D3D11_USAGE_IMMUTABLE,
-		.BindFlags = D3D11_BIND_FLAG::D3D11_BIND_SHADER_RESOURCE,
-		.CPUAccessFlags = 0,
-	};
-
-	D3D11_SUBRESOURCE_DATA testSubresourceData = {
-		.pSysMem = data,
-		.SysMemPitch = (u32)texture_width * channels * sizeof(byte),
-		.SysMemSlicePitch = 0,
-	};
-
-	if(auto res = m_device->CreateTexture2D(&testTextureDesc, &testSubresourceData, &m_testTexture); FAILED(res)) {
-		DXERROR(res);
-	}
+	std::unique_ptr<Texture> m_testTexture = std::make_unique<Texture>(m_device, m_testTexAsset);
 
 	D3D11_SHADER_RESOURCE_VIEW_DESC testTextureSRVDesc = {
 		.Format = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM,
@@ -312,7 +284,7 @@ DX11Context::DX11Context(GLFWwindow* window)
 		}
 	};
 
-	if(auto res = m_device->CreateShaderResourceView(m_testTexture.Get(), &testTextureSRVDesc, &m_testSRV); FAILED(res)) {
+	if(auto res = m_device->CreateShaderResourceView(m_testTexture->GetTexture().Get(), &testTextureSRVDesc, &m_testSRV); FAILED(res)) {
 		DXERROR(res);
 	}
 
@@ -364,7 +336,7 @@ DX11Context::DX11Context(GLFWwindow* window)
 
 DX11Context::~DX11Context()
 {
-#ifdef _DEBUG
+#ifdef DX11_DEBUG
 	// @TODO: this is kinda stupid because the lifetimes of the dx objects are tied to the lifetimes of the renderer
 	// and running this at in the destructor of renderer means they havent been destroyed yet
 	// so it will report that all objects are still alive, where should i run this then? pull it out of the renderer?
@@ -504,7 +476,7 @@ void DX11Context::CreateDeviceAndContext(UINT createFlags) {
 	ASSERT(supportedFeatureLevel == D3D_FEATURE_LEVEL_11_0, "");
 	spdlog::info("created device and device context");
 
-#if _DEBUG
+#ifdef DX11_DEBUG
 	if(auto res = m_device->QueryInterface(IID_PPV_ARGS(&m_debugInfoQueue)); FAILED(res)) {
 		DXERROR(res);
 	}
@@ -694,7 +666,7 @@ void DX11Context::Render() {
 	// vsync enabled
 	m_swapchain->Present(0, 0);
 
-#ifdef _DEBUG
+#ifdef DX11_DEBUG
 	LogDebugInfo();
 #endif
 }

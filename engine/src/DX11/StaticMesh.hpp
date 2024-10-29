@@ -2,78 +2,12 @@
 
 #include "Basic.hpp"
 #include "Math.hpp"
+#include "AssetSystem.hpp"
 
-#include "Renderer/DX11ContextUtils.hpp"
+#include "DX11ContextUtils.hpp"
 
 #include <d3d11.h>
 #include <wrl.h>
-
-struct cgltf_data;
-
-class MeshAsset {
-
-public:
-	// @TODO: temporary
-	MeshAsset(std::string_view filePath);
-	MeshAsset(
-		const std::vector<float3>& positions,
-		const std::vector<float3>& normals, 
-		const std::vector<float3>& tangents,
-		const std::vector<float3>& colors,
-		const std::vector<float2>& uv0s,
-		const std::vector<float2>& uv1s,
-		const std::vector<u32>& indices);
-
-	inline const std::vector<float3>& GetPositions() {
-		return m_positions;
-	}
-
-	inline const std::vector<float3>& GetNormals() {
-		return m_normals;
-	}
-
-	inline const std::vector<float3>& GetTangents() {
-		return m_tangents;
-	}
-
-	inline const std::vector<float3>& GetColors() {
-		return m_colors;
-	}
-
-	inline const std::vector<float2>& GetUV0s() {
-		return m_uv0s;
-	}
-
-	inline const std::vector<float2>& GetUV1s() {
-		return m_uv1s;
-	}
-
-	inline const std::vector<u32>& GetIndices() {
-		return m_indices;
-	}
-
-private:
-	void GltfPrintInfo(cgltf_data* data);
-
-	void GltfPrintMeshInfo(cgltf_data* data);
-	void GltfPrintAnimationInfo(cgltf_data* data);
-	void GltfPrintMaterialInfo(cgltf_data* data);
-	void GltfPrintImageInfo(cgltf_data* data);
-
-private:
-	std::string_view m_filePath;
-	// @TODO: store vertices in SOA
-	//std::vector<Vertex> m_vertices;
-	
-	std::vector<u32> m_indices;
-
-	std::vector<float3> m_positions;
-	std::vector<float3> m_normals;
-	std::vector<float3> m_tangents;
-	std::vector<float3> m_colors;
-	std::vector<float2> m_uv0s;
-	std::vector<float2> m_uv1s;
-};
 
 class StaticMesh {
 	template<typename T>
@@ -87,7 +21,6 @@ public:
 		float2 uv0;
 	};
 
-	
 	// @TODO: this class should interleave the vertex attributes and give it as a singe vertex ?
 	class VertexGenerator {
 	public:

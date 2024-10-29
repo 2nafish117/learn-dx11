@@ -3,9 +3,9 @@
 #include <spdlog/spdlog.h>
 #include <flags.h>
 
-#include "Renderer/DX11Context.hpp"
+#include "DX11/DX11Context.hpp"
 #include "Shader.hpp"
-#include "Importers.hpp"
+#include "AssetSystem.hpp"
 
 #include <GLFW/glfw3.h>
 
