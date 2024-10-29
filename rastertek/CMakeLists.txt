@@ -50,19 +50,19 @@ target_link_libraries(${TARGET_NAME}
 )
 
 # @TODO: changes to thesse do not trigger a recopy, make fake changes to cpp source to trigger
-add_custom_target(shaders
-	SOURCES 
-	data/shaders/color_ps.hlsl
-	data/shaders/color_vs.hlsl
-	data/shaders/texture_ps.hlsl
-	data/shaders/texture_vs.hlsl
-	data/shaders/light_ps.hlsl
-	data/shaders/light_vs.hlsl
-)
+# add_custom_target(shaders
+# 	SOURCES 
+# 	data/shaders/color_ps.hlsl
+# 	data/shaders/color_vs.hlsl
+# 	data/shaders/texture_ps.hlsl
+# 	data/shaders/texture_vs.hlsl
+# 	data/shaders/light_ps.hlsl
+# 	data/shaders/light_vs.hlsl
+# )
 
 add_custom_command(TARGET ${TARGET_NAME} POST_BUILD 
 	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/${TARGET_NAME}/data $<TARGET_FILE_DIR:${TARGET_NAME}>/../data
-	COMMENT "Copying shaders" VERBATIM
+	COMMENT "Copying data" VERBATIM
 	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/${TARGET_NAME}/data $<TARGET_FILE_DIR:${TARGET_NAME}>/data
-	COMMENT "Copying shaders" VERBATIM
+	COMMENT "Copying data" VERBATIM
 )

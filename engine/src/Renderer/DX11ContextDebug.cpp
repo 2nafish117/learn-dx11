@@ -1,5 +1,7 @@
 #include "DX11Context.hpp"
 
+#ifdef _DEBUG
+
 void DX11Context::LogDebugInfo()
 {
 	static const char* messageCategoryStrings[] = {
@@ -1415,3 +1417,5 @@ void DX11Context::VerifyComputePipeline() {
 		DXERROR(res);
 	}
 }
+
+#endif

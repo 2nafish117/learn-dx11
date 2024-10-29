@@ -1,6 +1,7 @@
 #include "Mesh.hpp"
 
 #include <cgltf/cgltf.h>
+#include "Importers.hpp"
 
 #pragma region static cgltf strings
 
@@ -134,30 +135,31 @@ static const char* jsmntype_strings[] = {
 MeshAsset::MeshAsset(std::string_view filePath)
 	: m_filePath(filePath)
 {
+	std::string realPath = global::assetSystem->GetRealPath(filePath);
 	// @TODO: temprary, gltf loader should make meshes and stuff instead, only processing should happen here? or is that file a custom mesh format?
-	spdlog::info("loading mesh {}", filePath);
+	spdlog::info("loading mesh {}", realPath);
 
 	// @TODO: customise options
 	cgltf_options options = {};
 	cgltf_data* data = nullptr;
-	cgltf_result result = cgltf_parse_file(&options, filePath.data(), &data);
+	cgltf_result result = cgltf_parse_file(&options, realPath.data(), &data);
 
 	if (result != cgltf_result_success) {
-		spdlog::error("failed loading mesh {}", filePath);
+		spdlog::error("failed loading mesh {}", realPath);
 		return;
 	}
 
-	spdlog::info("loaded mesh {}", filePath);
+	spdlog::info("loaded mesh {}", realPath);
 
 	spdlog::info("{}", data->json);
 	GltfPrintInfo(data);
 
-	if(cgltf_load_buffers(&options, data, filePath.data()) != cgltf_result_success) {
-		spdlog::error("failed loading mesh buffers {}", filePath);
+	if(cgltf_load_buffers(&options, data, realPath.data()) != cgltf_result_success) {
+		spdlog::error("failed loading mesh buffers {}", realPath);
 		return;
 	}
 
-	spdlog::info("loaded mesh buffers {}", filePath);
+	spdlog::info("loaded mesh buffers {}", realPath);
 
 	ASSERT(data->meshes_count > 0, "");
 	cgltf_mesh* mesh = &data->meshes[0];
@@ -255,7 +257,7 @@ MeshAsset::MeshAsset(std::string_view filePath)
 	// ASSERT(m_positions.size() == m_uv1s.size(), "");
 
 	cgltf_free(data);
-	spdlog::info("processed mesh {}", filePath);
+	spdlog::info("processed mesh {}", realPath);
 }
 
 MeshAsset::MeshAsset(

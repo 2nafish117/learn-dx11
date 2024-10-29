@@ -12,6 +12,7 @@
 #include <map>
 #include <memory>
 #include <limits>
+#include <filesystem>
 
 #include <spdlog/spdlog.h>
 #include <spdlog/stopwatch.h>

@@ -202,17 +202,17 @@ DX11Context::DX11Context(GLFWwindow* window)
 	m_quadMeshAsset = std::make_shared<MeshAsset>(positions, normals, tangents, colors, uv0s, uv1s, indices);
 	m_quadMesh = std::make_shared<StaticMesh>(m_device, m_quadMeshAsset);
 
-	m_cubeMeshAsset = std::make_shared<MeshAsset>("data/meshes/suzanne.glb");
+	m_cubeMeshAsset = std::make_shared<MeshAsset>("meshes/suzanne.glb");
 	m_cubeMesh = std::make_shared<StaticMesh>(m_device, m_cubeMeshAsset);
 
-	//m_twoCubeMeshAsset = std::make_shared<MeshAsset>("data/meshes/two_cubes.glb");
+	//m_twoCubeMeshAsset = std::make_shared<MeshAsset>("meshes/two_cubes.glb");
 	//m_twoCubeMesh = std::make_shared<Mesh>(m_device, m_twoCubeMeshAsset);
 
-	// m_sceneMeshAsset = std::make_shared<MeshAsset>("data/meshes/scene1.glb");
+	// m_sceneMeshAsset = std::make_shared<MeshAsset>("meshes/scene1.glb");
 	// m_sceneMesh = std::make_shared<Mesh>(m_device, m_sceneMeshAsset);
 
-	m_simpleVertexAsset = std::make_shared<ShaderAsset>(L"data/shaders/simple_vs.hlsl", "VSMain", "vs_5_0");
-	m_simplePixelAsset = std::make_shared<ShaderAsset>(L"data/shaders/simple_ps.hlsl", "PSMain", "ps_5_0");
+	m_simpleVertexAsset = std::make_shared<ShaderAsset>(L"shaders/simple_vs.hlsl", "VSMain", "vs_5_0");
+	m_simplePixelAsset = std::make_shared<ShaderAsset>(L"shaders/simple_ps.hlsl", "PSMain", "ps_5_0");
 
 	m_shaderCompiler = std::make_unique<ShaderCompiler>(new ShaderIncluder());
 
@@ -694,7 +694,9 @@ void DX11Context::Render() {
 	// vsync enabled
 	m_swapchain->Present(0, 0);
 
+#ifdef _DEBUG
 	LogDebugInfo();
+#endif
 }
 
 void DX11Context::Render(std::shared_ptr<StaticMesh> mesh, std::shared_ptr<VertexShader> shader)

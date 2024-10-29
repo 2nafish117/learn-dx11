@@ -13,19 +13,19 @@ set(TARGET_NAME
 add_executable(${TARGET_NAME})
 
 if(MSVC)
-  target_compile_options(${TARGET_NAME} 
-  PRIVATE 
-  /W4 
-  # /WX
-  )
+	target_compile_options(${TARGET_NAME} 
+	PRIVATE 
+	/W4 
+	# /WX
+	)
 else()
-  target_compile_options(${TARGET_NAME} 
-  PRIVATE 
-  -Wall 
-  -Wextra 
-  -Wpedantic 
-  # -Werror
-  )
+	target_compile_options(${TARGET_NAME} 
+	PRIVATE 
+	-Wall 
+	-Wextra 
+	-Wpedantic 
+	# -Werror
+	)
 endif()
 
 add_subdirectory(src)
@@ -47,7 +47,7 @@ target_link_libraries(${TARGET_NAME}
 add_custom_command(TARGET ${TARGET_NAME} 
 	POST_BUILD 
 	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/${TARGET_NAME}/data $<TARGET_FILE_DIR:${TARGET_NAME}>/../data
-	COMMENT "Copying shaders" VERBATIM
+	COMMENT "Copying data" VERBATIM
 	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/${TARGET_NAME}/data $<TARGET_FILE_DIR:${TARGET_NAME}>/data
-	COMMENT "Copying shaders" VERBATIM
+	COMMENT "Copying data" VERBATIM
 )

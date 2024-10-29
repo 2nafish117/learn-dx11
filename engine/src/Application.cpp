@@ -5,8 +5,10 @@
 
 #include "Renderer/DX11Context.hpp"
 #include "Shader.hpp"
+#include "Importers.hpp"
 
 #include <GLFW/glfw3.h>
+
 
 #pragma region glfw callbacks
 
@@ -22,18 +24,26 @@ void WindowSizeCallback(GLFWwindow* window, int width, int height) {
 
 Application::Application(int argc, char** argv)
 {
-	// https://github.com/gabime/spdlog/wiki/3.-Custom-formatting#pattern-flags
+	// init logging
 	spdlog::set_level(spdlog::level::trace);
-    spdlog::set_pattern("[%H:%M:%S.%e] [%^%L%$] [thread %t] %v");
+	spdlog::set_pattern("[%H:%M:%S.%e] [%^%L%$] [thread %t] %v");
 	spdlog::info("Logging initialised");
 
-	// https://github.com/sailormoon/flags/
 	const flags::args args(argc, argv);
 
-	const auto dataDir = args.get<std::string_view>("data_dir");
-	if(dataDir.has_value()) {
-		spdlog::info("using data directory: {}", *dataDir);
-		m_dataDir = *dataDir;
+	// init global systems
+	{
+		// init asset system
+		global::assetSystem = std::make_unique<AssetSystem>();
+	}
+
+	// configure global systems
+	{
+		ASSERT(global::assetSystem != nullptr, "");
+
+		const auto dataDir = args.get<std::string_view>("data_dir", "data");
+		spdlog::info("using data directory: {}", dataDir);
+		global::assetSystem->SetDataDir(dataDir);
 	}
 }
 
