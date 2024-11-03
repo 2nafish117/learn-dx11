@@ -4,7 +4,7 @@
 #include "Math.hpp"
 #include "AssetSystem.hpp"
 
-#include "DX11ContextUtils.hpp"
+#include "DX11Context.hpp"
 
 #include <d3d11.h>
 #include <wrl.h>

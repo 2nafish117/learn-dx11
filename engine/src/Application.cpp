@@ -3,7 +3,7 @@
 #include <spdlog/spdlog.h>
 #include <flags.h>
 
-#include "DX11/DX11Context.hpp"
+#include "Renderer/DeferredRenderer.hpp"
 #include "Shader.hpp"
 #include "AssetSystem.hpp"
 
@@ -76,12 +76,14 @@ int Application::Run()
 		return -1;
 	}
 
-	m_renderer = std::make_unique<DX11Context>(m_window);
+	auto dx11 = std::make_unique<DX11Context>(m_window);
+	m_renderer = std::make_unique<DeferredRenderer>(m_window, std::move(dx11));
 
 	while (!glfwWindowShouldClose(m_window))
 	{
 		glfwPollEvents();
 		
+		//ASSERT(false, "");
 		m_renderer->Render();
 	}
 

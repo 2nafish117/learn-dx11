@@ -2,10 +2,12 @@
 
 #include "Basic.hpp"
 
-class DX11Context;
+// class DX11Context;
 class ShaderCompiler;
+class DeferredRenderer;
 
 struct GLFWwindow;
+
 
 class Application {
 
@@ -20,7 +22,7 @@ private:
 private:
 	GLFWwindow* m_window = nullptr;
 
-	std::unique_ptr<DX11Context> m_renderer;
+	std::unique_ptr<DeferredRenderer> m_renderer;
 
 	// glfw callbacks
 	friend void WindowSizeCallback(GLFWwindow* window, int width, int height);

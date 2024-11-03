@@ -1372,7 +1372,7 @@ void DX11Context::LogDebugInfo()
 		// @TODO: use scratch memory / allocators
 		//D3D11_MESSAGE* message = (D3D11_MESSAGE*)malloc(messageSize);
 
-		assert(messageSize < m_scratchSize);
+		ASSERT(messageSize < m_scratchSize, "");
 		D3D11_MESSAGE* message = reinterpret_cast<D3D11_MESSAGE*>(m_scratchMemory);
 
 		m_debugInfoQueue->GetMessageA(i, message, &messageSize);

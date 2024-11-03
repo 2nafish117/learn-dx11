@@ -5,8 +5,7 @@
 #include <d3d11.h>
 
 #include "Basic.hpp"
-#include "DX11/DX11ContextUtils.hpp"
-
+#include "DX11/DX11Context.hpp"
 
 class ShaderAsset {
 	template<typename T>
