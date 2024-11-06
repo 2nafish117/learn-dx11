@@ -204,6 +204,7 @@ DX11Context::DX11Context(GLFWwindow* window)
 	m_quadMesh = std::make_shared<StaticMesh>(m_device, m_quadMeshAsset);
 
 	m_cubeMeshAsset = std::make_shared<MeshAsset>("meshes/suzanne.glb");
+	m_cubeMeshAsset->Load();
 	m_cubeMesh = std::make_shared<StaticMesh>(m_device, m_cubeMeshAsset);
 
 	//m_twoCubeMeshAsset = std::make_shared<MeshAsset>("meshes/two_cubes.glb");
@@ -265,7 +266,7 @@ DX11Context::DX11Context(GLFWwindow* window)
 	};
 
 	ComPtr<ID3D11InputLayout> m_inputLayout;
-	if (auto res = m_device->CreateInputLayout(inputElementDescs, ARRAYSIZE(inputElementDescs), m_simpleVertexAsset->GetBlob()->GetBufferPointer(), m_simpleVertexAsset->GetBlob()->GetBufferSize(), &m_inputLayout); FAILED(res)) {
+	if (auto res = m_device->CreateInputLayout(inputElementDescs, ARRAYSIZE(inputElementDescs), m_simpleVertexAsset->blob, m_simpleVertexAsset->blobSize, &m_inputLayout); FAILED(res)) {
 		DXERROR(res);
 	}
 

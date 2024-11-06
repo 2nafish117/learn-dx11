@@ -15,7 +15,10 @@ bool ShaderCompiler::CompileShaderAsset(std::weak_ptr<ShaderAsset> asset)
 			a->GetDefines()
 		);
 
-		a->SetBlob(res.blob);
+		a->blobSize = res.blob->GetBufferSize();
+
+		a->blob = (const byte*) malloc(a->blobSize);
+		memcpy_s((void*)a->blob, a->blobSize, res.blob->GetBufferPointer(), a->blobSize);
 
 		if(res.error != nullptr) {
 			const char* errStr = (const char*)res.error->GetBufferPointer();
@@ -32,7 +35,7 @@ ShaderCompiler::CompiledResult ShaderCompiler::CompileShader(
 	std::wstring_view filePath, 
 	std::string_view entryFunc, 
 	std::string_view target, 
-	const std::vector<D3D_SHADER_MACRO>& defines) {
+	const std::vector<ShaderMacro>& defines) {
 
 	ASSERT(filePath.data(), "");
 	ASSERT(entryFunc.data(), "");
@@ -81,13 +84,12 @@ VertexShader::VertexShader(ComPtr<ID3D11Device> device, std::weak_ptr<ShaderAsse
 	: Base(device, asset)
 {
 	if(auto sa = m_shaderAsset.lock(); sa != nullptr) {
-		auto blob = sa->GetBlob();
-		ASSERT(blob, "");
+		ASSERT(sa->blob, "");
 
 		// @TODO: what is this?
 		ID3D11ClassLinkage* linkage = nullptr;
 		
-		if(auto res = m_device->CreateVertexShader(blob->GetBufferPointer(), blob->GetBufferSize(), linkage, &m_shader); FAILED(res)) {
+		if(auto res = m_device->CreateVertexShader(sa->blob, sa->blobSize, linkage, &m_shader); FAILED(res)) {
 			DXERROR(res);
 		}
 	}
@@ -97,13 +99,12 @@ PixelShader::PixelShader(ComPtr<ID3D11Device> device, std::weak_ptr<ShaderAsset>
 	: Base(device, asset)
 {
 	if(auto sa = m_shaderAsset.lock(); sa != nullptr) {
-		auto blob = sa->GetBlob();
-		ASSERT(blob, "");
+		ASSERT(sa->blob, "");
 		
 		// @TODO: what is this?
 		ID3D11ClassLinkage* linkage = nullptr;
 		
-		if(auto res = m_device->CreatePixelShader(blob->GetBufferPointer(), blob->GetBufferSize(), linkage, &m_shader); FAILED(res)) {
+		if(auto res = m_device->CreatePixelShader(sa->blob, sa->blobSize, linkage, &m_shader); FAILED(res)) {
 			DXERROR(res);
 		}
 	}

@@ -7,26 +7,17 @@
 #include "Basic.hpp"
 #include "DX11/DX11ContextUtils.hpp"
 
+struct ShaderMacro
+{
+	const char* name;
+	const char* definition;
+};
 
 class ShaderAsset {
-	template<typename T>
-    using ComPtr = Microsoft::WRL::ComPtr<T>;
 
 public:
-    ShaderAsset(std::wstring_view filePath, std::string_view entryFunc, std::string_view target, const std::vector<D3D_SHADER_MACRO>& defines = {})
-        : m_filePath(filePath), m_entryFunc(entryFunc), m_target(target), m_defines(defines) {}
-
-	inline bool IsCompiled() {
-		return m_blob != nullptr;
-	}
-
-	inline ComPtr<ID3DBlob> GetBlob() {
-		return m_blob;
-	}
-
-	inline void SetBlob(ComPtr<ID3DBlob> blob) {
-		m_blob = blob;
-	}
+	ShaderAsset(std::wstring_view filePath, std::string_view entryFunc, std::string_view target, const std::vector<ShaderMacro>& defines = {})
+		: m_filePath(filePath), m_entryFunc(entryFunc), m_target(target), m_defines(defines) {}
 
 	inline std::wstring_view GetFilePath() {
 		return m_filePath;
@@ -40,20 +31,22 @@ public:
 		return m_target;
 	}
 
-	inline const std::vector<D3D_SHADER_MACRO>& GetDefines() {
+	inline const std::vector<ShaderMacro>& GetDefines() {
 		return m_defines;
 	}
 
+public:
+	const byte* blob = nullptr;
+	size_t blobSize = 0;
+
 private:
-    ComPtr<ID3DBlob> m_blob = nullptr;
     std::wstring_view m_filePath = L"";
 	std::string_view m_entryFunc = "";
 	std::string_view m_target = "";
-	std::vector<D3D_SHADER_MACRO> m_defines;
+	std::vector<ShaderMacro> m_defines;
 };
 
 
-// @TODO: should we allow unloading shaders? does dx11 even allow unloading shaders?
 class ShaderBase {
 public:
 
@@ -98,7 +91,7 @@ private:
 		std::wstring_view filePath, 
 		std::string_view entryFunc, 
 		std::string_view target, 
-		const std::vector<D3D_SHADER_MACRO>& defines);
+		const std::vector<ShaderMacro>& defines);
 };
 
 // @TODO: implement the shader includer

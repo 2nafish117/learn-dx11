@@ -276,6 +276,14 @@ MeshAsset::MeshAsset(
 
 }
 
+void MeshAsset::Load()
+{
+}
+
+void MeshAsset::Unload()
+{
+}
+
 #pragma region debug print gltf file
 
 void MeshAsset::GltfPrintInfo(cgltf_data* data) {
@@ -371,4 +379,12 @@ TextureAsset::TextureAsset(std::string_view filePath)
 TextureAsset::~TextureAsset() 
 {
 	stbi_image_free(m_data);
+}
+
+void TextureAsset::Load()
+{
+}
+
+void TextureAsset::Unload()
+{
 }
