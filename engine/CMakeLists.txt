@@ -28,7 +28,7 @@ else()
 	)
 endif()
 
-add_subdirectory(src)
+add_subdirectory(source)
 
 target_link_libraries(${TARGET_NAME}
 	d3d11.lib

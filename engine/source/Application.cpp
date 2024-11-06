@@ -6,6 +6,7 @@
 #include "DX11/DX11Context.hpp"
 #include "Shader.hpp"
 #include "AssetSystem.hpp"
+#include "SceneSystem.hpp"
 
 #include <GLFW/glfw3.h>
 
@@ -33,22 +34,30 @@ Application::Application(int argc, char** argv)
 
 	// init global systems
 	{
-		// init asset system
-		global::assetSystem = std::make_unique<AssetSystem>();
-	}
+		global::assetSystem = new AssetSystem();
+		{
+			ASSERT(global::assetSystem != nullptr, "");
 
-	// configure global systems
-	{
-		ASSERT(global::assetSystem != nullptr, "");
+			const auto dataDir = args.get<std::string_view>("data_dir", "data");
+			spdlog::info("using data directory: {}", dataDir);
+			global::assetSystem->SetDataDir(dataDir);
+		}
 
-		const auto dataDir = args.get<std::string_view>("data_dir", "data");
-		spdlog::info("using data directory: {}", dataDir);
-		global::assetSystem->SetDataDir(dataDir);
+		global::sceneSystem = new SceneSystem();
+		{
+			ASSERT(global::sceneSystem != nullptr, "");
+			global::sceneSystem->runtimeScene = std::make_shared<RuntimeScene>();
+		}
 	}
 }
 
 Application::~Application()
 {
+	// deinit global systems
+	{
+		delete global::assetSystem;
+		delete global::sceneSystem;
+	}
 }
 
 int Application::Run()

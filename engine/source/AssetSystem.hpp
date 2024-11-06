@@ -5,8 +5,22 @@
 
 #include <stb/stb_image.h>
 
+class AssetSystem;
+namespace global 
+{
+	extern AssetSystem* assetSystem;
+}
+
+
 class AssetSystem {
 public:
+	AssetSystem() {
+		spdlog::info("AssetSystem init");
+	}
+	~AssetSystem() {
+		spdlog::info("AssetSystem de-init");
+	}
+
 	// eh...
 	inline std::string DataDir() {
 		return m_dataDir.generic_string();
@@ -36,21 +50,17 @@ private:
 	inline void SetDataDir(std::string_view dir) {
 		m_dataDir = dir;
 	}
+
 private:
 	std::filesystem::path m_dataDir = "data";
 
+	// only allow Application to set the data directory
 	friend class Application;
 };
-
-namespace global 
-{
-	extern std::unique_ptr<AssetSystem> assetSystem;
-}
 
 struct cgltf_data;
 
 class MeshAsset {
-
 public:
 	// @TODO: temporary
 	MeshAsset(std::string_view filePath);

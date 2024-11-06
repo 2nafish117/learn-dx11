@@ -3,7 +3,7 @@
 
 namespace global 
 {
-	std::unique_ptr<AssetSystem> assetSystem = nullptr;
+	AssetSystem* assetSystem = nullptr;
 }
 
 #pragma region static cgltf strings
