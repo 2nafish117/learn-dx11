@@ -76,9 +76,8 @@ DX11Context::DX11Context(GLFWwindow* window)
 		DXERROR(res);
 	}
 #endif
-
-	// @TODO: multi buffering
-	CreateSwapchain(m_window, 1);
+	// triple buffering
+	CreateSwapchain(m_window, 3);
 	ObtainSwapchainResources();
 
 	int width, height;
@@ -343,6 +342,7 @@ void DX11Context::GetOutputModes(std::vector<DXGI_MODE_DESC>& outOutputModes)
 }
 
 void DX11Context::CreateDeviceAndContext(UINT createFlags) {
+	// @TODO: https://walbourn.github.io/anatomy-of-direct3d-11-create-device/
 	ASSERT(m_selectedAdapter.Get() != nullptr, "");
 
 	D3D_FEATURE_LEVEL requiredFeatureLevels[] = {
