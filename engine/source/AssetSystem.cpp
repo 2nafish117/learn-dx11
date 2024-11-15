@@ -502,6 +502,43 @@ void AssetSystem::RegisterAssets()
 		ma.Load();
 	}
 
+	// @TODO: register a quad
+	// std::vector<StaticMesh::Vertex> vertices = {
+	// 	StaticMesh::Vertex{ float3(-0.5f, -0.5f, 0.5f), float3(0.0f, 0.0f, -1.0f), float3(0.0f, 0.5f, 0.0f), float2(0.0f, 1.0f) },
+	// 	StaticMesh::Vertex{ float3(0.5f, 0.5f, 0.5f),   float3(0.0f, 0.0f, -1.0f), float3(0.0f, 0.0f, 0.5f), float2(1.0f, 0.0f) },
+	// 	StaticMesh::Vertex{ float3(0.5f, -0.5f, 0.5f),  float3(0.0f, 0.0f, -1.0f), float3(0.0f, 0.0f, 0.5f), float2(1.0f, 1.0f) },
+	// 	StaticMesh::Vertex{ float3(-0.5f, 0.5f, 0.5f),  float3(0.0f, 0.0f, -1.0f), float3(0.5f, 0.0f, 0.0f), float2(0.0f, 0.0f) },
+	// };
+
+	//std::vector<float3> positions = {
+	//	float3(-0.5f, -0.5f, 0.5f), float3(0.5f, 0.5f, 0.5f), float3(0.5f, -0.5f, 0.5f), float3(-0.5f, 0.5f, 0.5f)
+	//};
+	//std::vector<float3> normals = {
+	//	float3(0.0f, 0.0f, -1.0f),
+	//	float3(0.0f, 0.0f, -1.0f),
+	//	float3(0.0f, 0.0f, -1.0f),
+	//	float3(0.0f, 0.0f, -1.0f),
+	//};
+	//std::vector<float3> tangents;
+	//std::vector<float3> colors = {
+	//	float3(0.0f, 0.5f, 0.0f),
+	//	float3(0.0f, 0.0f, 0.5f),
+	//	float3(0.0f, 0.0f, 0.5f),
+	//	float3(0.5f, 0.0f, 0.0f),
+	//};
+	//std::vector<float2> uv0s = {
+	//	float2(0.0f, 1.0f),
+	//	float2(1.0f, 0.0f),
+	//	float2(1.0f, 1.0f),
+	//	float2(0.0f, 0.0f),
+	//};
+	//std::vector<float2> uv1s;
+
+	//std::vector<u32> indices = {
+	//	0, 1, 2,
+	//	0, 3, 1
+	//};
+
 	//(void)m_catalog->RegisterMeshAsset(MeshAsset("meshes/two_cubes.glb"));
 	//(void)m_catalog->RegisterMeshAsset(MeshAsset("meshes/scene1.glb"));
 

@@ -88,7 +88,7 @@ private:
 class StaticMeshEntity : public Entity {
 public:
 	MeshID meshAsset = { 0 };
-	// @TODO: hardcoded
+	// @TODO: hardcoded!!!!!!!!!!!!!!!!!!!!!!
 	ShaderID vertShaderAsset = { 0 };
 	ShaderID pixShaderAsset = { 1 };
 

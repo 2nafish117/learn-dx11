@@ -7,15 +7,15 @@
 
 bool ShaderCompiler::CompileShaderAsset(ShaderID asset)
 {
-    ShaderAsset& shaderAsset = const_cast<ShaderAsset&>(global::assetSystem->Catalog()->GetShaderAsset(asset));
+	ShaderAsset& shaderAsset = const_cast<ShaderAsset&>(global::assetSystem->Catalog()->GetShaderAsset(asset));
 
-    // @TODO: meh, copy
-    const std::vector<ShaderMacro>& defines = shaderAsset.GetDefines();
-    std::vector<D3D_SHADER_MACRO> shaderMacros;
-    
-    for(const auto& define: defines) {
-        shaderMacros.push_back(D3D_SHADER_MACRO{define.name, define.definition});
-    }
+	// @TODO: meh, copy
+	const std::vector<ShaderMacro>& defines = shaderAsset.GetDefines();
+	std::vector<D3D_SHADER_MACRO> shaderMacros;
+	
+	for(const auto& define: defines) {
+		shaderMacros.push_back(D3D_SHADER_MACRO{define.name, define.definition});
+	}
 
 	std::wstring_view filePath = shaderAsset.GetFilePath();
 	std::string_view entryFunc = shaderAsset.GetEntryFunc();
@@ -39,7 +39,7 @@ bool ShaderCompiler::CompileShaderAsset(ShaderID asset)
 
 	shaderAsset.blobSize = res.blob->GetBufferSize();
 
-    // @TODO: use temp allocator here
+	// @TODO: use temp allocator here
 	shaderAsset.blob = (const byte*) malloc(shaderAsset.blobSize);
 	memcpy_s((void*)shaderAsset.blob, shaderAsset.blobSize, res.blob->GetBufferPointer(), shaderAsset.blobSize);
 
@@ -80,10 +80,10 @@ HRESULT ShaderIncluder::Open(D3D_INCLUDE_TYPE IncludeType, LPCSTR pFileName, LPC
 	
 	static const char* includeTypeStrings[] = {
 		"D3D_INCLUDE_LOCAL",
-        "D3D_INCLUDE_SYSTEM",
-        "D3D10_INCLUDE_LOCAL",
-        "D3D10_INCLUDE_SYSTEM",
-        "D3D_INCLUDE_FORCE_DWORD",
+		"D3D_INCLUDE_SYSTEM",
+		"D3D10_INCLUDE_LOCAL",
+		"D3D10_INCLUDE_SYSTEM",
+		"D3D_INCLUDE_FORCE_DWORD",
 	};
 
 	spdlog::error("shader includes not yet supported, implement ShaderIncluder fully");

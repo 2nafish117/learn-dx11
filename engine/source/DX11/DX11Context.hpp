@@ -41,7 +41,6 @@ public:
 	DX11Context(GLFWwindow* window);
 	virtual ~DX11Context();
 
-	void Render();
 	void Render(const RuntimeScene& scene);
 	void HandleResize(u32 width, u32 height);
 
@@ -73,8 +72,8 @@ private:
 	void ObtainSwapchainResources();
 	void ReleaseSwapchainResources();
 
-	// @TODO: run this at the end of every frame or pass or each dx11 call?
-	// probably call on every dx11 draw call? so state can be verified?
+	// convinience function to log messages from d3d api, by default called at the end of a frame just before present
+	// but can be called anytime during Render
 	void LogDebugInfo();
 
 	// @TODO: should these be in the utilities?
@@ -111,34 +110,8 @@ private:
 
 	D3D11_VIEWPORT m_viewport = {};
 
-	//std::shared_ptr<MeshAsset> m_quadMeshAsset;
-	//std::shared_ptr<DX11Mesh> m_quadMesh; 
-
-	//std::shared_ptr<MeshAsset> m_cubeMeshAsset;
-	//std::shared_ptr<DX11Mesh> m_cubeMesh;
-
-	//std::shared_ptr<MeshAsset> m_twoCubeMeshAsset;
-	//std::shared_ptr<DX11Mesh> m_twoCubeMesh; 
-
-	//std::shared_ptr<MeshAsset> m_sceneMeshAsset;
-	//std::shared_ptr<DX11Mesh> m_sceneMesh;
-
-	//std::shared_ptr<ShaderAsset> m_simpleVertexAsset;
-	//std::shared_ptr<ShaderAsset> m_simplePixelAsset;
-
-	//std::shared_ptr<VertexShader> m_simpleVertex;
-	//std::shared_ptr<PixelShader> m_simplePixel;
-
-	//std::shared_ptr<TextureAsset> m_testTexAsset;
-
-	//ComPtr<ID3D11ShaderResourceView> m_testSRV;
-	ComPtr<ID3D11SamplerState> m_testSamplerState;
-
 	ComPtr<ID3D11Buffer> m_matrixBuffer;
-
 	ComPtr<ID3D11Buffer> m_pointLightBuffer;
-
-	// std::shared_ptr<CameraEntity> m_camera;
 
 	struct MatrixBuffer {
 		mat4 ModelToWorld;
