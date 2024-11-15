@@ -49,6 +49,15 @@ DX11Context::DX11Context(GLFWwindow* window)
 
 	m_selectedOutput = PickOutput(outputs);
 
+	std::vector<DXGI_MODE_DESC> modeDescs;
+	GetOutputModes(modeDescs);
+
+	spdlog::info("available display modes:");
+	for (const auto& desc : modeDescs) {
+		spdlog::info("width={} height={} refreshRate={}/{}, format={} scanlineOrdering={} scaling={}", 
+			desc.Width, desc.Height, desc.RefreshRate.Numerator, desc.RefreshRate.Denominator, (uint)desc.Format, (uint)desc.ScanlineOrdering, (uint)desc.Scaling);
+	}
+
 	UINT deviceCreateFlags = 0;
 #ifdef DX11_DEBUG
 	deviceCreateFlags |= D3D11_CREATE_DEVICE_FLAG::D3D11_CREATE_DEVICE_DEBUG;
@@ -313,6 +322,24 @@ DX11Context::ComPtr<IDXGIOutput> DX11Context::PickOutput(const std::vector<ComPt
 
 	// @TODO: pick output? based onwhat?
 	return outputs[0];
+}
+
+void DX11Context::GetOutputModes(std::vector<DXGI_MODE_DESC>& outOutputModes)
+{
+	UINT numModes = 0;
+	m_selectedOutput->GetDisplayModeList(
+		DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM,
+		DXGI_ENUM_MODES_INTERLACED,
+		&numModes,
+		nullptr);
+
+	outOutputModes.resize(numModes);
+
+	m_selectedOutput->GetDisplayModeList(
+		DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM,
+		DXGI_ENUM_MODES_INTERLACED,
+		&numModes,
+		outOutputModes.data());
 }
 
 void DX11Context::CreateDeviceAndContext(UINT createFlags) {

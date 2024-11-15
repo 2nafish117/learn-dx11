@@ -62,6 +62,7 @@ private:
 	ComPtr<IDXGIAdapter> PickAdapter(const std::vector<ComPtr<IDXGIAdapter>>& adapters);
 	void EnumOutputs(ComPtr<IDXGIAdapter> adapter, std::vector<ComPtr<IDXGIOutput>>& outOutputs);
 	ComPtr<IDXGIOutput> PickOutput(const std::vector<ComPtr<IDXGIOutput>>& outputs);
+	void GetOutputModes(std::vector<DXGI_MODE_DESC>& outOutputModes);
 
 	void CreateDeviceAndContext(UINT createFlags);
 
@@ -95,9 +96,7 @@ private:
 	ComPtr<ID3D11InfoQueue> m_debugInfoQueue;
 	ComPtr<IDXGIDebug> m_dxgiDebug;
 #endif
-	ComPtr<ID3DUserDefinedAnnotation> m_annotation; 
-	// @TODO: use ID3DUserDefinedAnnotation for perf captures? replace D3DPERF_BeginEvent, D3DPERF_EndEvent, D3DPERF_SetMarker 
-	// ComPtr
+	ComPtr<ID3DUserDefinedAnnotation> m_annotation;
 
 	ComPtr<ID3D11Device> m_device;
 	ComPtr<ID3D11DeviceContext> m_deviceContext;
