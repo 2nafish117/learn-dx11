@@ -1,6 +1,15 @@
 #include "AssetSystem.hpp"
 #include <cgltf/cgltf.h>
 
+#include "DX11/DX11Context.hpp"
+#include "DX11/DX11Mesh.hpp"
+#include "DX11/DX11Shader.hpp"
+#include "DX11/DX11Texture.hpp"
+
+namespace global {
+	extern DX11Context* rendererSystem;
+}
+
 namespace global 
 {
 	AssetSystem* assetSystem = nullptr;
@@ -138,7 +147,26 @@ static const char* jsmntype_strings[] = {
 MeshAsset::MeshAsset(std::string_view filePath)
 	: m_filePath(filePath)
 {
-	std::string realPath = global::assetSystem->GetRealPath(filePath);
+	
+}
+
+// @TODO: should this be allowed?
+MeshAsset::MeshAsset(
+	const std::vector<float3>& positions,
+	const std::vector<float3>& normals, 
+	const std::vector<float3>& tangents,
+	const std::vector<float3>& colors,
+	const std::vector<float2>& uv0s,
+	const std::vector<float2>& uv1s,
+	const std::vector<u32>& indices)
+	: m_positions(positions), m_normals(normals), m_tangents(tangents), m_colors(colors), m_uv0s(uv0s), m_uv1s(uv1s), m_indices(indices)
+{
+
+}
+
+void MeshAsset::Load()
+{
+	std::string realPath = global::assetSystem->GetRealPath(m_filePath);
 	// @TODO: temprary, gltf loader should make meshes and stuff instead, only processing should happen here? or is that file a custom mesh format?
 	spdlog::info("loading mesh {}", realPath);
 
@@ -164,10 +192,10 @@ MeshAsset::MeshAsset(std::string_view filePath)
 
 	spdlog::info("loaded mesh buffers {}", realPath);
 
-	ASSERT(data->meshes_count > 0, "");
+	ENSURE(data->meshes_count > 0, "");
 	cgltf_mesh* mesh = &data->meshes[0];
 
-	ASSERT(mesh->primitives_count > 0, "");
+	ENSURE(mesh->primitives_count > 0, "");
 	cgltf_primitive* primitive = &mesh->primitives[0];
 
 	// get indices
@@ -181,7 +209,7 @@ MeshAsset::MeshAsset(std::string_view filePath)
 		cgltf_attribute* attribute = &mesh->primitives->attributes[a];
 		cgltf_buffer_view* buffer_view = attribute->data->buffer_view;
 
-		ASSERT(buffer_view->type == cgltf_buffer_view_type_vertices, "");
+		ENSURE(buffer_view->type == cgltf_buffer_view_type_vertices, "");
 
 		switch(attribute->type) {
 		case cgltf_attribute_type_position: {
@@ -253,35 +281,51 @@ MeshAsset::MeshAsset(std::string_view filePath)
 		memset(m_uv0s.data(), 0, m_uv0s.size() * sizeof(float2));
 	}
 
-	ASSERT(m_positions.size() == m_normals.size(), "");
-	// ASSERT(m_positions.size() == m_tangents.size(), "");
-	ASSERT(m_positions.size() == m_colors.size(), "");
-	ASSERT(m_positions.size() == m_uv0s.size(), "");
-	// ASSERT(m_positions.size() == m_uv1s.size(), "");
+	ENSURE(m_positions.size() == m_normals.size(), "");
+	// ENSURE(m_positions.size() == m_tangents.size(), "");
+	ENSURE(m_positions.size() == m_colors.size(), "");
+	ENSURE(m_positions.size() == m_uv0s.size(), "");
+	// ENSURE(m_positions.size() == m_uv1s.size(), "");
 
 	cgltf_free(data);
 	spdlog::info("processed mesh {}", realPath);
-}
 
-MeshAsset::MeshAsset(
-	const std::vector<float3>& positions,
-	const std::vector<float3>& normals, 
-	const std::vector<float3>& tangents,
-	const std::vector<float3>& colors,
-	const std::vector<float2>& uv0s,
-	const std::vector<float2>& uv1s,
-	const std::vector<u32>& indices)
-	: m_positions(positions), m_normals(normals), m_tangents(tangents), m_colors(colors), m_uv0s(uv0s), m_uv1s(uv1s), m_indices(indices)
-{
+	state = AssetState::Loaded;
 
-}
-
-void MeshAsset::Load()
-{
+	InitRendererResource();
 }
 
 void MeshAsset::Unload()
 {
+	m_indices.clear();
+	
+	m_positions.clear();
+	m_normals.clear();
+	m_tangents.clear();
+	m_colors.clear();
+	m_uv0s.clear();
+	m_uv1s.clear();
+
+	state = AssetState::Unloaded;
+}
+
+void* MeshAsset::GetRendererResource() const
+{
+	return m_rendererResource;
+}
+
+void MeshAsset::InitRendererResource()
+{
+	DX11Mesh::CreateInfo createInfo = {
+		.positions = m_positions,
+		.normals = m_normals,
+		.tangents = m_tangents,
+		.colors = m_colors,
+		.uv0s = m_uv0s,
+		.uv1s = m_uv1s,
+		.indices = m_indices,
+	};
+	m_rendererResource = new DX11Mesh(global::rendererSystem->GetDevice(), createInfo);
 }
 
 #pragma region debug print gltf file
@@ -371,20 +415,103 @@ void MeshAsset::GltfPrintMeshInfo(cgltf_data* data) {
 #pragma endregion debug print gltf file
 
 TextureAsset::TextureAsset(std::string_view filePath) 
+	: m_filePath(filePath)
 {
-	std::string realPath = global::assetSystem->GetRealPath(filePath);
-	m_data = stbi_load(realPath.data(), &m_width, &m_height, &m_numComponents, 4);
 }
 
 TextureAsset::~TextureAsset() 
 {
-	stbi_image_free(m_data);
 }
 
 void TextureAsset::Load()
 {
+	std::string realPath = global::assetSystem->GetRealPath(m_filePath);
+	m_data = stbi_load(realPath.data(), &m_width, &m_height, &m_numComponents, 4);
+	InitRendererResource();
+
+	state = AssetState::Loaded;
 }
 
 void TextureAsset::Unload()
 {
+	stbi_image_free(m_data);
+}
+
+void* TextureAsset::GetRendererResource() const
+{
+	return m_rendererResource;
+}
+
+void TextureAsset::InitRendererResource()
+{
+	DX11Texture::CreateInfo createInfo = {
+		.width = m_width,
+		.height = m_height,
+		.numComponents = m_numComponents,
+		.data = m_data,
+	};
+	m_rendererResource = new DX11Texture(global::rendererSystem->GetDevice(), createInfo);
+}
+
+void ShaderAsset::Load()
+{
+	InitRendererResource();
+	state = AssetState::Loaded;
+}
+
+void ShaderAsset::Unload()
+{
+}
+
+void* ShaderAsset::GetRendererResource() const
+{
+	return m_rendererResource;
+}
+
+void ShaderAsset::InitRendererResource()
+{
+	auto device = global::rendererSystem->GetDevice();
+	switch (m_kind)
+	{
+	case ShaderAsset::Kind::Invalid:
+		ENSURE(false, "");
+		break;
+	case ShaderAsset::Kind::Vertex:
+		m_rendererResource = new DX11VertexShader(device, DX11VertexShader::CreateInfo{
+				.blob = blob,
+				.blobSize = blobSize,
+			});
+		break;
+	case ShaderAsset::Kind::Pixel:
+		m_rendererResource = new DX11PixelShader(device, DX11PixelShader::CreateInfo{
+				.blob = blob,
+				.blobSize = blobSize, 
+			});
+		break;
+	default:
+		ENSURE(false, "");
+		break;
+	}
+}
+
+void AssetSystem::RegisterAssets()
+{
+	{
+		MeshID mid = m_catalog->RegisterMeshAsset(MeshAsset("meshes/suzanne.glb"));
+		MeshAsset& ma = const_cast<MeshAsset&>(m_catalog->GetMeshAsset(mid));
+		ma.Load();
+	}
+
+	//(void)m_catalog->RegisterMeshAsset(MeshAsset("meshes/two_cubes.glb"));
+	//(void)m_catalog->RegisterMeshAsset(MeshAsset("meshes/scene1.glb"));
+
+	ShaderID sid0 = m_catalog->RegisterShaderAsset(ShaderAsset(ShaderAsset::Kind::Vertex, L"shaders/simple_vs.hlsl", "VSMain", "vs_5_0"));
+	global::rendererSystem->shaderCompiler->CompileShaderAsset({0});
+	const_cast<ShaderAsset&>(m_catalog->GetShaderAsset({0})).Load();
+	ShaderID sid1 = m_catalog->RegisterShaderAsset(ShaderAsset(ShaderAsset::Kind::Pixel, L"shaders/simple_ps.hlsl", "PSMain", "ps_5_0"));
+	global::rendererSystem->shaderCompiler->CompileShaderAsset({1});
+	const_cast<ShaderAsset&>(m_catalog->GetShaderAsset({1})).Load();
+
+	TextureID tid = m_catalog->RegisterTextureAsset(TextureAsset("textures/checker.png"));
+	const_cast<TextureAsset&>(m_catalog->GetTextureAsset(tid)).Load();
 }

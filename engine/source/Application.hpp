@@ -20,8 +20,13 @@ private:
 private:
 	GLFWwindow* m_window = nullptr;
 
-	std::unique_ptr<DX11Context> m_renderer;
+	//std::unique_ptr<DX11Context> m_renderer;
 
 	// glfw callbacks
 	friend void WindowSizeCallback(GLFWwindow* window, int width, int height);
 };
+
+namespace global 
+{
+	extern DX11Context* rendererSystem;
+}

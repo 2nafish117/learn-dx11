@@ -10,10 +10,13 @@
 
 #include <comdef.h>
 
-#include "StaticMesh.hpp"
-#include "Texture.hpp"
-#include "Shader.hpp"
-#include "Camera.hpp"
+#include "DX11Mesh.hpp"
+#include "DX11Texture.hpp"
+#include "DX11Shader.hpp"
+
+#include "SceneSystem.hpp"
+#include "AssetSystem.hpp"
+
 
 DX11Context::DX11Context(GLFWwindow* window)
 	: m_window(window)
@@ -56,6 +59,11 @@ DX11Context::DX11Context(GLFWwindow* window)
 
 #ifdef DX11_DEBUG
 	if (auto res = m_device->QueryInterface(IID_PPV_ARGS(&m_debug)); FAILED(res)) {
+		DXERROR(res);
+	}
+
+	// @TODO: flags?
+	if (auto res = DXGIGetDebugInterface1(0, IID_PPV_ARGS(&m_dxgiDebug)); FAILED(res)) {
 		DXERROR(res);
 	}
 #endif
@@ -171,41 +179,41 @@ DX11Context::DX11Context(GLFWwindow* window)
 	// 	StaticMesh::Vertex{ float3(-0.5f, 0.5f, 0.5f),  float3(0.0f, 0.0f, -1.0f), float3(0.5f, 0.0f, 0.0f), float2(0.0f, 0.0f) },
 	// };
 
-	std::vector<float3> positions = {
-		float3(-0.5f, -0.5f, 0.5f), float3(0.5f, 0.5f, 0.5f), float3(0.5f, -0.5f, 0.5f), float3(-0.5f, 0.5f, 0.5f)
-	};
-	std::vector<float3> normals = {
-		float3(0.0f, 0.0f, -1.0f),
-		float3(0.0f, 0.0f, -1.0f),
-		float3(0.0f, 0.0f, -1.0f),
-		float3(0.0f, 0.0f, -1.0f),
-	};
-	std::vector<float3> tangents;
-	std::vector<float3> colors = {
-		float3(0.0f, 0.5f, 0.0f),
-		float3(0.0f, 0.0f, 0.5f),
-		float3(0.0f, 0.0f, 0.5f),
-		float3(0.5f, 0.0f, 0.0f),
-	};
-	std::vector<float2> uv0s = {
-		float2(0.0f, 1.0f),
-		float2(1.0f, 0.0f),
-		float2(1.0f, 1.0f),
-		float2(0.0f, 0.0f),
-	};
-	std::vector<float2> uv1s;
+	//std::vector<float3> positions = {
+	//	float3(-0.5f, -0.5f, 0.5f), float3(0.5f, 0.5f, 0.5f), float3(0.5f, -0.5f, 0.5f), float3(-0.5f, 0.5f, 0.5f)
+	//};
+	//std::vector<float3> normals = {
+	//	float3(0.0f, 0.0f, -1.0f),
+	//	float3(0.0f, 0.0f, -1.0f),
+	//	float3(0.0f, 0.0f, -1.0f),
+	//	float3(0.0f, 0.0f, -1.0f),
+	//};
+	//std::vector<float3> tangents;
+	//std::vector<float3> colors = {
+	//	float3(0.0f, 0.5f, 0.0f),
+	//	float3(0.0f, 0.0f, 0.5f),
+	//	float3(0.0f, 0.0f, 0.5f),
+	//	float3(0.5f, 0.0f, 0.0f),
+	//};
+	//std::vector<float2> uv0s = {
+	//	float2(0.0f, 1.0f),
+	//	float2(1.0f, 0.0f),
+	//	float2(1.0f, 1.0f),
+	//	float2(0.0f, 0.0f),
+	//};
+	//std::vector<float2> uv1s;
 
-	std::vector<u32> indices = {
-		0, 1, 2,
-		0, 3, 1
-	};
+	//std::vector<u32> indices = {
+	//	0, 1, 2,
+	//	0, 3, 1
+	//};
 
-	m_quadMeshAsset = std::make_shared<MeshAsset>(positions, normals, tangents, colors, uv0s, uv1s, indices);
-	m_quadMesh = std::make_shared<StaticMesh>(m_device, m_quadMeshAsset);
+	//m_quadMeshAsset = std::make_shared<MeshAsset>(positions, normals, tangents, colors, uv0s, uv1s, indices);
+	//m_quadMesh = std::make_shared<DX11Mesh>(m_device, m_quadMeshAsset);
 
-	m_cubeMeshAsset = std::make_shared<MeshAsset>("meshes/suzanne.glb");
-	m_cubeMeshAsset->Load();
-	m_cubeMesh = std::make_shared<StaticMesh>(m_device, m_cubeMeshAsset);
+	//m_cubeMeshAsset = std::make_shared<MeshAsset>("meshes/suzanne.glb");
+	//m_cubeMeshAsset->Load();
+	//m_cubeMesh = std::make_shared<DX11Mesh>(m_device, m_cubeMeshAsset);
 
 	//m_twoCubeMeshAsset = std::make_shared<MeshAsset>("meshes/two_cubes.glb");
 	//m_twoCubeMesh = std::make_shared<Mesh>(m_device, m_twoCubeMeshAsset);
@@ -213,18 +221,18 @@ DX11Context::DX11Context(GLFWwindow* window)
 	// m_sceneMeshAsset = std::make_shared<MeshAsset>("meshes/scene1.glb");
 	// m_sceneMesh = std::make_shared<Mesh>(m_device, m_sceneMeshAsset);
 
-	m_simpleVertexAsset = std::make_shared<ShaderAsset>(L"shaders/simple_vs.hlsl", "VSMain", "vs_5_0");
-	m_simplePixelAsset = std::make_shared<ShaderAsset>(L"shaders/simple_ps.hlsl", "PSMain", "ps_5_0");
+	//m_simpleVertexAsset = std::make_shared<ShaderAsset>(L"shaders/simple_vs.hlsl", "VSMain", "vs_5_0");
+	//m_simplePixelAsset = std::make_shared<ShaderAsset>(L"shaders/simple_ps.hlsl", "PSMain", "ps_5_0");
 
-	m_shaderCompiler = std::make_unique<ShaderCompiler>(new ShaderIncluder());
+	shaderCompiler = std::make_unique<ShaderCompiler>(new ShaderIncluder());
 
-	m_shaderCompiler->CompileShaderAsset(m_simpleVertexAsset);
-	m_shaderCompiler->CompileShaderAsset(m_simplePixelAsset);
+	//m_shaderCompiler->CompileShaderAsset(m_simpleVertexAsset);
+	//m_shaderCompiler->CompileShaderAsset(m_simplePixelAsset);
 
-	m_simpleVertex = std::make_shared<VertexShader>(m_device, m_simpleVertexAsset);
-	m_simplePixel = std::make_shared<PixelShader>(m_device, m_simplePixelAsset);
+	//m_simpleVertex = std::make_shared<VertexShader>(m_device, m_simpleVertexAsset);
+	//m_simplePixel = std::make_shared<PixelShader>(m_device, m_simplePixelAsset);
 
-	m_camera = std::make_shared<Camera>();
+	// m_camera = std::make_shared<CameraEntity>();
 
 	D3D11_INPUT_ELEMENT_DESC inputElementDescs[] = {
 		{
@@ -265,46 +273,46 @@ DX11Context::DX11Context(GLFWwindow* window)
 		}
 	};
 
-	ComPtr<ID3D11InputLayout> m_inputLayout;
-	if (auto res = m_device->CreateInputLayout(inputElementDescs, ARRAYSIZE(inputElementDescs), m_simpleVertexAsset->blob, m_simpleVertexAsset->blobSize, &m_inputLayout); FAILED(res)) {
-		DXERROR(res);
-	}
+	//ComPtr<ID3D11InputLayout> m_inputLayout;
+	//if (auto res = m_device->CreateInputLayout(inputElementDescs, ARRAYSIZE(inputElementDescs), m_simpleVertexAsset->blob, m_simpleVertexAsset->blobSize, &m_inputLayout); FAILED(res)) {
+	//	DXERROR(res);
+	//}
 
-	m_deviceContext->IASetInputLayout(m_inputLayout.Get());
+	//m_deviceContext->IASetInputLayout(m_inputLayout.Get());
 
-	m_testTexAsset = std::make_shared<TextureAsset>("textures/checker.png");
+	//m_testTexAsset = std::make_shared<TextureAsset>("textures/checker.png");
 
-	std::unique_ptr<Texture> m_testTexture = std::make_unique<Texture>(m_device, m_testTexAsset);
+	//std::unique_ptr<Texture> m_testTexture = std::make_unique<Texture>(m_device, m_testTexAsset);
 
-	D3D11_SHADER_RESOURCE_VIEW_DESC testTextureSRVDesc = {
-		.Format = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM,
-    	.ViewDimension = D3D11_SRV_DIMENSION::D3D11_SRV_DIMENSION_TEXTURE2D,
-		.Texture2D = {
-			.MostDetailedMip = 0,
-    		.MipLevels = static_cast<UINT>(-1),
-		}
-	};
+	//D3D11_SHADER_RESOURCE_VIEW_DESC testTextureSRVDesc = {
+	//	.Format = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM,
+	//	.ViewDimension = D3D11_SRV_DIMENSION::D3D11_SRV_DIMENSION_TEXTURE2D,
+	//	.Texture2D = {
+	//		.MostDetailedMip = 0,
+	//		.MipLevels = static_cast<UINT>(-1),
+	//	}
+	//};
 
-	if(auto res = m_device->CreateShaderResourceView(m_testTexture->GetTexture().Get(), &testTextureSRVDesc, &m_testSRV); FAILED(res)) {
-		DXERROR(res);
-	}
+	//if(auto res = m_device->CreateShaderResourceView(m_testTexture->GetTexture().Get(), &testTextureSRVDesc, &m_testSRV); FAILED(res)) {
+	//	DXERROR(res);
+	//}
 
-	D3D11_SAMPLER_DESC testSamplerStateDesc = {
-		.Filter = D3D11_FILTER::D3D11_FILTER_MIN_MAG_MIP_LINEAR,
-		.AddressU = D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_WRAP,
-		.AddressV = D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_WRAP,
-		.AddressW = D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_WRAP,
-		.MipLODBias = 0.0f,
-		.MaxAnisotropy = 1,
-		.ComparisonFunc = D3D11_COMPARISON_FUNC::D3D11_COMPARISON_NEVER,
-		.BorderColor = {0, 0, 0, 0},
-		.MinLOD = 0.0f,
-		.MaxLOD = D3D11_FLOAT32_MAX,
-	};
+	//D3D11_SAMPLER_DESC testSamplerStateDesc = {
+	//	.Filter = D3D11_FILTER::D3D11_FILTER_MIN_MAG_MIP_LINEAR,
+	//	.AddressU = D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_WRAP,
+	//	.AddressV = D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_WRAP,
+	//	.AddressW = D3D11_TEXTURE_ADDRESS_MODE::D3D11_TEXTURE_ADDRESS_WRAP,
+	//	.MipLODBias = 0.0f,
+	//	.MaxAnisotropy = 1,
+	//	.ComparisonFunc = D3D11_COMPARISON_FUNC::D3D11_COMPARISON_NEVER,
+	//	.BorderColor = {0, 0, 0, 0},
+	//	.MinLOD = 0.0f,
+	//	.MaxLOD = D3D11_FLOAT32_MAX,
+	//};
 
-	if(auto res = m_device->CreateSamplerState(&testSamplerStateDesc, &m_testSamplerState); FAILED(res)) {
-		DXERROR(res);
-	}
+	//if(auto res = m_device->CreateSamplerState(&testSamplerStateDesc, &m_testSamplerState); FAILED(res)) {
+	//	DXERROR(res);
+	//}
 
 	D3D11_BUFFER_DESC matrixBufferDesc = {
 		.ByteWidth = sizeof(MatrixBuffer),
@@ -337,6 +345,9 @@ DX11Context::DX11Context(GLFWwindow* window)
 
 DX11Context::~DX11Context()
 {
+	// @TODO: make a renderer system that uses dx11 context internally?
+	spdlog::info("Renderer System de-init");
+
 #ifdef DX11_DEBUG
 	// @TODO: this is kinda stupid because the lifetimes of the dx objects are tied to the lifetimes of the renderer
 	// and running this at in the destructor of renderer means they havent been destroyed yet
@@ -344,6 +355,10 @@ DX11Context::~DX11Context()
 	if (auto res = m_debug->ReportLiveDeviceObjects(D3D11_RLDO_FLAGS::D3D11_RLDO_DETAIL); FAILED(res)) {
 		DXERROR(res);
 	}
+
+	// @TODO: is this different from above code?
+	//m_dxgiDebug->ReportLiveObjects()
+
 #endif
 
 	ImGui_ImplDX11_Shutdown();
@@ -562,6 +577,7 @@ void DX11Context::ResizeSwapchainResources(u32 width, u32 height) {
 	ObtainSwapchainResources();
 }
 
+# if 0
 void DX11Context::Render() {
 
 	ImGui_ImplDX11_NewFrame();
@@ -593,10 +609,13 @@ void DX11Context::Render() {
 	modelToWorld = modelToWorld * rotMatrix;
 	modelToWorld = modelToWorld * transMatrix;
 
-	m_camera->transform.matrix = DirectX::XMMatrixTranslation(0, 0, -3);
+	// m_camera->transform.matrix = DirectX::XMMatrixTranslation(0, 0, -3);
 
-	mat4 worldToCam = m_camera->GetView();
-	mat4 CamToProjection = m_camera->GetProjection();
+	// mat4 worldToCam = m_camera->GetView();
+	// mat4 CamToProjection = m_camera->GetProjection();
+
+	mat4 worldToCam = DirectX::XMMatrixIdentity();
+	mat4 CamToProjection = DirectX::XMMatrixIdentity();
 
 	D3D11_MAPPED_SUBRESOURCE subresource;
 	m_deviceContext->Map(m_matrixBuffer.Get(), 0, D3D11_MAP::D3D11_MAP_WRITE_DISCARD, 0, &subresource);
@@ -671,10 +690,179 @@ void DX11Context::Render() {
 	LogDebugInfo();
 #endif
 }
+#endif
 
-void DX11Context::Render(std::shared_ptr<StaticMesh> mesh, std::shared_ptr<VertexShader> shader)
+
+void DX11Context::Render(const RuntimeScene& scene)
 {
+	ImGui_ImplDX11_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
+	ImGui::NewFrame();
 
+	ImGui::ShowDemoWindow();
+	// ImGui::Begin("the name", nullptr, ImGuiWindowFlags_DockNodeHost);
+	
+	// ImGui::End();
+
+
+	// begin render
+	const float clearColor[4] = {0.2f, 0.1f, 0.1f, 1.0f};
+	m_deviceContext->ClearRenderTargetView(m_renderTargetView.Get(), clearColor);
+	m_deviceContext->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+	float time = static_cast<float>(glfwGetTime());
+	float angle = DirectX::XMScalarSin(time);
+	float moveX = 0.5f * DirectX::XMScalarSin(time * 2.0f);
+	float moveY = 0.5f * DirectX::XMScalarSin(time * 2.0f);
+	auto rotMatrix = DirectX::XMMatrixRotationY(angle + DirectX::XM_PI);
+	//auto rotMatrix = DirectX::XMMatrixTranslation(angle, 0, 0);
+	//auto rotMatrix = DirectX::XMMatrixIdentity();
+
+	auto transMatrix = DirectX::XMMatrixTranslation(moveX, moveY, 0);
+
+	DirectX::XMMATRIX modelToWorld = DirectX::XMMatrixIdentity();
+	modelToWorld = modelToWorld * rotMatrix;
+	modelToWorld = modelToWorld * transMatrix;
+
+	scene.camera->xform.matrix = DirectX::XMMatrixTranslation(0, 0, -3);
+
+	mat4 worldToCam = scene.camera->GetView();
+	mat4 CamToProjection = scene.camera->GetProjection();
+
+	D3D11_MAPPED_SUBRESOURCE subresource;
+	m_deviceContext->Map(m_matrixBuffer.Get(), 0, D3D11_MAP::D3D11_MAP_WRITE_DISCARD, 0, &subresource);
+	MatrixBuffer* data = reinterpret_cast<MatrixBuffer*>(subresource.pData);
+	data->ModelToWorld = DirectX::XMMatrixTranspose(modelToWorld);
+	data->WorldToView = DirectX::XMMatrixTranspose(worldToCam);
+	data->ViewToProjection = DirectX::XMMatrixTranspose(CamToProjection);
+	m_deviceContext->Unmap(m_matrixBuffer.Get(), 0);
+
+	D3D11_MAPPED_SUBRESOURCE pointSubresource;
+	m_deviceContext->Map(m_pointLightBuffer.Get(), 0, D3D11_MAP::D3D11_MAP_WRITE_DISCARD, 0, &pointSubresource);
+	PointLightBuffer* plBuffer = reinterpret_cast<PointLightBuffer*>(pointSubresource.pData);
+	plBuffer->Pos = DirectX::XMFLOAT3(1.0, 1.0f, -3);
+	plBuffer->Col = DirectX::XMFLOAT3(1.0, 1.0, 1.0);
+	m_deviceContext->Unmap(m_pointLightBuffer.Get(), 0);
+
+
+	D3D11_INPUT_ELEMENT_DESC inputElementDescs[] = {
+		{
+			.SemanticName = "POSITION",
+			.SemanticIndex = 0,
+			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT,
+			.InputSlot = 0,
+			.AlignedByteOffset = 0,
+			.InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
+			.InstanceDataStepRate = 0,
+		},
+		{
+			.SemanticName = "NORMAL",
+			.SemanticIndex = 0,
+			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT,
+			.InputSlot = 0,
+			.AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT,
+			.InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
+			.InstanceDataStepRate = 0,
+		},
+		{
+			.SemanticName = "COLOR",
+			.SemanticIndex = 0,
+			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT,
+			.InputSlot = 0,
+			.AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT,
+			.InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
+			.InstanceDataStepRate = 0,
+		},
+		{
+			.SemanticName = "TEXCOORD",
+			.SemanticIndex = 0,
+			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32_FLOAT,
+			.InputSlot = 0,
+			.AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT,
+			.InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
+			.InstanceDataStepRate = 0,
+		}
+	};
+
+	const ShaderAsset& vertShaderAssetSimple = global::assetSystem->Catalog()->GetShaderAsset(scene.staticMeshEntity0->vertShaderAsset);
+	DX11VertexShader* vertShaderSimple = (DX11VertexShader*) vertShaderAssetSimple.GetRendererResource();
+	const ShaderAsset& pixShaderAssetSimple = global::assetSystem->Catalog()->GetShaderAsset(scene.staticMeshEntity0->pixShaderAsset);
+	DX11PixelShader* pixShaderSimple = (DX11PixelShader*) pixShaderAssetSimple.GetRendererResource();
+
+	ComPtr<ID3D11InputLayout> m_inputLayout;
+	if (auto res = m_device->CreateInputLayout(
+		inputElementDescs, 
+		ARRAYSIZE(inputElementDescs), 
+		vertShaderAssetSimple.blob,
+		vertShaderAssetSimple.blobSize,
+		&m_inputLayout); FAILED(res)) 
+	{
+		DXERROR(res);
+	}
+
+	m_deviceContext->IASetInputLayout(m_inputLayout.Get());
+
+	const MeshAsset& meshAsset0 = global::assetSystem->Catalog()->GetMeshAsset(scene.staticMeshEntity0->meshAsset);
+	DX11Mesh* rendererMesh = (DX11Mesh*) meshAsset0.GetRendererResource();
+	
+	const TextureAsset& texAsset = global::assetSystem->Catalog()->GetTextureAsset(scene.staticMeshEntity0->texAsset);
+	DX11Texture* texture = (DX11Texture*) texAsset.GetRendererResource();
+
+	// draw mesh 1
+	m_deviceContext->IASetVertexBuffers(
+		0, 
+		rendererMesh->GetVertexBufferCount(),
+		rendererMesh->GetVertexBuffer().GetAddressOf(),
+		rendererMesh->GetVertexBufferStrides().data(),
+		rendererMesh->GetVertexBufferOffsets().data());
+
+	m_deviceContext->IASetIndexBuffer(rendererMesh->GetIndexBuffer().Get(), rendererMesh->GetIndexBufferFormat(), 0);
+
+	m_deviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	
+	m_deviceContext->VSSetShader(vertShaderSimple->Get(), nullptr, 0);
+	m_deviceContext->VSSetConstantBuffers(0, 1, m_matrixBuffer.GetAddressOf());
+
+	m_deviceContext->PSSetShader(pixShaderSimple->Get(), nullptr, 0);
+	m_deviceContext->PSSetShaderResources(0, 1, texture->GetSRV().GetAddressOf());
+	m_deviceContext->PSSetSamplers(0, 1, texture->GetSamplerState().GetAddressOf());
+	m_deviceContext->PSSetConstantBuffers(0, 1, m_pointLightBuffer.GetAddressOf());
+	m_deviceContext->PSSetConstantBuffers(1, 1, m_matrixBuffer.GetAddressOf());
+
+	m_deviceContext->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), m_depthStencilView.Get());
+
+	m_deviceContext->DrawIndexed(rendererMesh->GetIndexCount(), 0, 0);
+
+#ifdef DX11_DEBUG
+	// log errors from our code
+	LogDebugInfo();
+#endif
+
+	m_annotation->BeginEvent(L"ImGui");
+	ImGui::Render();
+	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
+	// Update and Render additional Platform Windows
+	// if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+	{
+		ImGui::UpdatePlatformWindows();
+		ImGui::RenderPlatformWindowsDefault();
+	}
+
+	m_annotation->EndEvent();
+
+#ifdef DX11_DEBUG
+	// log errors from imgui
+	LogDebugInfo();
+#endif
+
+	VerifyGraphicsPipeline();
+
+	// end render
+	// vsync enabled
+	if (auto res = m_swapchain->Present(0, 0); FAILED(res)) {
+		DXERROR(res);
+	}
 }
 
 void DX11Context::HandleResize(u32 width, u32 height)

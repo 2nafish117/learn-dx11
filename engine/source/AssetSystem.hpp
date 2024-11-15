@@ -19,6 +19,13 @@ class MeshAsset;
 class ShaderAsset;
 class TextureAsset;
 
+class DX11Mesh;
+class DX11Texture;
+class DX11ShaderBase;
+
+#define DECL_ASSET_ID(name, internalType) struct name { internalType value; }
+
+DECL_ASSET_ID(AssetID, u32);
 
 class AssetSystem {
 public:
@@ -29,6 +36,8 @@ public:
 	~AssetSystem() {
 		spdlog::info("AssetSystem de-init");
 	}
+
+	void RegisterAssets();
 
 	inline const AssetCatalog* Catalog() { return m_catalog.get(); }
 
@@ -70,27 +79,33 @@ private:
 	friend class Application;
 };
 
-
-using AssetID = u32;
-
+DECL_ASSET_ID(MeshID, u32);
+DECL_ASSET_ID(ShaderID, u32);
+DECL_ASSET_ID(TextureID, u32);
 
 class AssetCatalog {
 public:
 	// @TODO: catalog file read
 	AssetCatalog(std::string_view catalogPath, int initialCount = 128) {
 		m_meshAssets.reserve(initialCount);
-		// m_shaderAssets.reserve(initialCount);
+		m_shaderAssets.reserve(initialCount);
 		m_textureAssets.reserve(initialCount);
 	}
 
-	// @TODO: mesh asset is not shallow copyable
-	AssetID RegisterMeshAsset(MeshAsset&& asset) { m_meshAssets.emplace_back(asset); }
-	AssetID RegisterShaderAsset();
-	AssetID RegisterTextureAsset();
+	// @TODO: mesh asset is not shallow copyable, make them shallow copyable
+	MeshID RegisterMeshAsset(MeshAsset&& asset) { m_meshAssets.emplace_back(asset); return {0}; }
+	ShaderID RegisterShaderAsset(ShaderAsset&& asset) { m_shaderAssets.emplace_back(asset); return {0}; }
+	TextureID RegisterTextureAsset(TextureAsset&& asset) { m_textureAssets.emplace_back(asset); return {0}; }
+
+	const MeshAsset& GetMeshAsset(MeshID id) const { return m_meshAssets[id.value]; }
+	const ShaderAsset& GetShaderAsset(ShaderID id) const { 
+		return m_shaderAssets[id.value];
+	}
+	const TextureAsset& GetTextureAsset(TextureID id) const { return m_textureAssets[id.value]; }
 
 private:
 	std::vector<MeshAsset> m_meshAssets;
-	// std::vector<ShaderAsset> m_shaderAssets;
+	std::vector<ShaderAsset> m_shaderAssets;
 	std::vector<TextureAsset> m_textureAssets;
 };
 
@@ -135,22 +150,19 @@ public:
 
 	virtual void Load() override;
 	virtual void Unload() override;
+	void* GetRendererResource() const;
+	void InitRendererResource();
 
 	inline const std::vector<float3>& GetPositions() { return m_positions; }
-
 	inline const std::vector<float3>& GetNormals() { return m_normals; }
-
 	inline const std::vector<float3>& GetTangents() { return m_tangents; }
-
 	inline const std::vector<float3>& GetColors() { return m_colors; }
-
 	inline const std::vector<float2>& GetUV0s() { return m_uv0s; }
-
 	inline const std::vector<float2>& GetUV1s() { return m_uv1s; }
-
 	inline const std::vector<u32>& GetIndices() { return m_indices; }
 
 private:
+	// @TODO: move this stuff to gltf importer
 	void GltfPrintInfo(cgltf_data* data);
 
 	void GltfPrintMeshInfo(cgltf_data* data);
@@ -171,6 +183,8 @@ private:
 	std::vector<float3> m_colors;
 	std::vector<float2> m_uv0s;
 	std::vector<float2> m_uv1s;
+
+	DX11Mesh* m_rendererResource = nullptr;
 };
 
 class TextureAsset : public Asset {
@@ -180,29 +194,67 @@ public:
 
 	virtual void Load() override;
 	virtual void Unload() override;
+	void* GetRendererResource() const;
+	void InitRendererResource();
 
-	inline int GetWidth() {
-		return m_width;
-	}
-	
-	inline int GetHeight() {
-		return m_height;
-	}
-
-	inline int GetNumComponents() {
-		return m_numComponents;
-	}
-	
-	inline const byte* GetData() {
-		return m_data;
-	}
+	inline int GetWidth() const { return m_width; }
+	inline int GetHeight() const { return m_height; }
+	inline int GetNumComponents() const { return m_numComponents; }
+	inline const byte* GetData() const { return m_data; }
 	
 private:
-
+	std::string_view m_filePath;
+	
 	int m_width = 0;
 	int m_height = 0;
 	int m_numComponents = 0;
 
 	stbi_uc* m_data = nullptr;
 
+	DX11Texture* m_rendererResource = nullptr;
+};
+
+
+struct ShaderMacro
+{
+	const char* name;
+	const char* definition;
+};
+
+class ShaderAsset : public Asset {
+
+public:
+	enum class Kind {
+		Invalid = 0,
+		Vertex = 1,
+		Pixel,
+
+		Num
+	};
+
+	ShaderAsset(Kind kind, std::wstring_view filePath, std::string_view entryFunc, std::string_view target, const std::vector<ShaderMacro>& defines = {})
+		: m_kind(kind), m_filePath(filePath), m_entryFunc(entryFunc), m_target(target), m_defines(defines) {}
+
+	virtual void Load() override;
+	virtual void Unload() override;
+	void* GetRendererResource() const;
+	void InitRendererResource();
+
+	inline std::wstring_view GetFilePath() const { return m_filePath; }
+	inline std::string_view GetEntryFunc() const { return m_entryFunc; }
+	inline std::string_view GetTarget() const { return m_target; }
+	inline const std::vector<ShaderMacro>& GetDefines() const { return m_defines; }
+
+public:
+	const byte* blob = nullptr;
+	size_t blobSize = 0;
+
+private:
+	std::wstring_view m_filePath = L"";
+	std::string_view m_entryFunc = "";
+	std::string_view m_target = "";
+	std::vector<ShaderMacro> m_defines;
+	Kind m_kind = Kind::Invalid;
+
+	DX11ShaderBase* m_rendererResource = nullptr;
 };

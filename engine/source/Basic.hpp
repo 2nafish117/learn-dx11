@@ -20,18 +20,27 @@
 #define ARRLEN(arr) (sizeof(arr) / sizeof(arr[0]))
 #define NAMEOF(x) (#x)
 
+// @TODO: using DebugBreak on win 32 gives stackframe info
 #ifdef _DEBUG
 #define DEBUGBREAK() __debugbreak()
 #else
 #define DEBUGBREAK()
 #endif
 
+// when do i use asserts, when do i use checks?
+// assert when shit hits the fan, and we absolutely cannot proceed further
+// check/ensure if something goes wrong and dev needs to know about it, but shits not gone too far just yet
+
 #define ASSERT(condition, msg) {	\
+	if(!(condition)) DEBUGBREAK();	\
 	assert((condition) && (msg));	\
+}
+
+#define ENSURE(condition, msg) {	\
 	if(!(condition)) DEBUGBREAK();	\
 }
 
-#define UNIMPLEMENTED() ASSERT(false, msg)
+#define UNIMPLEMENTED() ASSERT(false, "")
 #define UNREACHABLE(msg) ASSERT(false, msg)
 
 using byte = unsigned char;

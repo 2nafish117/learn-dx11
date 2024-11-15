@@ -2,6 +2,7 @@
 
 #include "Basic.hpp"
 #include "Math.hpp"
+#include "AssetSystem.hpp"
 
 class SceneSystem;
 namespace global 
@@ -45,10 +46,6 @@ public:
 	}
 
 	std::shared_ptr<RuntimeScene> runtimeScene;
-
-	// DX11Scene GetRenderScene() {
-		
-	// }
 };
 
 
@@ -90,5 +87,11 @@ private:
 
 class StaticMeshEntity : public Entity {
 public:
+	MeshID meshAsset = { 0 };
+	// @TODO: hardcoded
+	ShaderID vertShaderAsset = { 0 };
+	ShaderID pixShaderAsset = { 1 };
+
+	TextureID texAsset = { 0 };
 private:
 };

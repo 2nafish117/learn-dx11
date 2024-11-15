@@ -7,9 +7,12 @@ PRIVATE
 	DX11Context.cpp
 	DX11ContextDebug.cpp
 	
-	StaticMesh.hpp
-	StaticMesh.cpp
+	DX11Mesh.hpp
+	DX11Mesh.cpp
 	
-	Texture.hpp
-	Texture.cpp
+	DX11Shader.hpp
+	DX11Shader.cpp
+
+	DX11Texture.hpp
+	DX11Texture.cpp
 )

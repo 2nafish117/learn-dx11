@@ -52,7 +52,9 @@ float3 PhongBRDF(float3 wsLightPos, float3 wsCamPos, float3 wsFragPos, float3 ws
 
 float4 PSMain(PSInput psInput) : SV_TARGET
 {
-
+	//float4 _pos = psInput.position;
+	//float4 _col = psInput.color;
+	
 	float4 color = tex.Sample(texSampler, psInput.uv0);
 	
 	float3 wsCamPos = float3(-worldToView[3][0], -worldToView[3][1], -worldToView[3][2]);

@@ -16,12 +16,6 @@ PRIVATE
 	Application.hpp	
 	Application.cpp
 	
-	Camera.hpp
-	Camera.cpp
-	
-	Shader.hpp
-	Shader.cpp
-
 	Importers.cpp
 	Importers.hpp
 

@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef _DEBUG
+#define DX11_DEBUG
+#endif
+
 // windows defines min and max as macros, disable with this, wtf???!! why!!??
 #define NOMINMAX
 #include <d3d11_1.h>
@@ -9,26 +13,24 @@
 #include <d3dcommon.h>
 #include <directxmath.h>
 
+#ifdef DX11_DEBUG
+#include <dxgidebug.h>
+#endif
+
 #include "Basic.hpp"
 #include "Math.hpp"
 #include "DX11ContextUtils.hpp"
 
 struct GLFWwindow;
 
-class ShaderAsset;
-class MeshAsset;
-class TextureAsset;
-class Camera;
-
-class StaticMesh;
-class VertexShader;
-class PixelShader;
-
+class DX11Mesh;
+class DX11VertexShader;
+class DX11PixelShader;
 class ShaderCompiler;
 
-#ifdef _DEBUG
-#define DX11_DEBUG
-#endif
+class RuntimeScene;
+
+
 
 class DX11Context {
 	template<typename T>
@@ -40,21 +42,21 @@ public:
 	virtual ~DX11Context();
 
 	void Render();
-
-	void Render(std::shared_ptr<StaticMesh> mesh, std::shared_ptr<VertexShader> shader);
-
+	void Render(const RuntimeScene& scene);
 	void HandleResize(u32 width, u32 height);
 
 	void InitImgui();
 
-	ComPtr<ID3D11Device> GetDevice() {
+	inline ComPtr<ID3D11Device> GetDevice() {
 		return m_device;
 	}
 
-	ComPtr<ID3D11DeviceContext> GetDeviceContext() {
+	inline ComPtr<ID3D11DeviceContext> GetDeviceContext() {
 		return m_deviceContext;
 	}
 
+public:
+	std::unique_ptr<ShaderCompiler> shaderCompiler;
 
 private:
 	void EnumAdapters(std::vector<ComPtr<IDXGIAdapter>>& outAdapters);
@@ -90,6 +92,7 @@ private:
 #ifdef DX11_DEBUG
 	ComPtr<ID3D11Debug> m_debug;
 	ComPtr<ID3D11InfoQueue> m_debugInfoQueue;
+	ComPtr<IDXGIDebug> m_dxgiDebug;
 #endif
 	ComPtr<ID3DUserDefinedAnnotation> m_annotation; 
 	// @TODO: use ID3DUserDefinedAnnotation for perf captures? replace D3DPERF_BeginEvent, D3DPERF_EndEvent, D3DPERF_SetMarker 
@@ -108,36 +111,34 @@ private:
 
 	D3D11_VIEWPORT m_viewport = {};
 
-	std::shared_ptr<MeshAsset> m_quadMeshAsset;
-	std::shared_ptr<StaticMesh> m_quadMesh; 
+	//std::shared_ptr<MeshAsset> m_quadMeshAsset;
+	//std::shared_ptr<DX11Mesh> m_quadMesh; 
 
-	std::shared_ptr<MeshAsset> m_cubeMeshAsset;
-	std::shared_ptr<StaticMesh> m_cubeMesh;
+	//std::shared_ptr<MeshAsset> m_cubeMeshAsset;
+	//std::shared_ptr<DX11Mesh> m_cubeMesh;
 
-	std::shared_ptr<MeshAsset> m_twoCubeMeshAsset;
-	std::shared_ptr<StaticMesh> m_twoCubeMesh; 
+	//std::shared_ptr<MeshAsset> m_twoCubeMeshAsset;
+	//std::shared_ptr<DX11Mesh> m_twoCubeMesh; 
 
-	std::shared_ptr<MeshAsset> m_sceneMeshAsset;
-	std::shared_ptr<StaticMesh> m_sceneMesh;
+	//std::shared_ptr<MeshAsset> m_sceneMeshAsset;
+	//std::shared_ptr<DX11Mesh> m_sceneMesh;
 
-	std::shared_ptr<ShaderAsset> m_simpleVertexAsset;
-	std::shared_ptr<ShaderAsset> m_simplePixelAsset;
+	//std::shared_ptr<ShaderAsset> m_simpleVertexAsset;
+	//std::shared_ptr<ShaderAsset> m_simplePixelAsset;
 
-	std::shared_ptr<VertexShader> m_simpleVertex;
-	std::shared_ptr<PixelShader> m_simplePixel;
+	//std::shared_ptr<VertexShader> m_simpleVertex;
+	//std::shared_ptr<PixelShader> m_simplePixel;
 
-	std::shared_ptr<TextureAsset> m_testTexAsset;
+	//std::shared_ptr<TextureAsset> m_testTexAsset;
 
-	std::unique_ptr<ShaderCompiler> m_shaderCompiler;
-
-	ComPtr<ID3D11ShaderResourceView> m_testSRV;
+	//ComPtr<ID3D11ShaderResourceView> m_testSRV;
 	ComPtr<ID3D11SamplerState> m_testSamplerState;
 
 	ComPtr<ID3D11Buffer> m_matrixBuffer;
 
 	ComPtr<ID3D11Buffer> m_pointLightBuffer;
 
-	std::shared_ptr<Camera> m_camera;
+	// std::shared_ptr<CameraEntity> m_camera;
 
 	struct MatrixBuffer {
 		mat4 ModelToWorld;
@@ -157,4 +158,12 @@ private:
 	// @TODO: use proper allocators
 	byte* m_scratchMemory = nullptr;
 	u32 m_scratchSize = 0;
+};
+
+
+// @TODO: implement a sampler state cache for all common sampler state types
+class SamplerStateCache {
+public:
+
+private:
 };

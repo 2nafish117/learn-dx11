@@ -9,7 +9,7 @@
 #include <d3d11.h>
 #include <wrl.h>
 
-class StaticMesh {
+class DX11Mesh {
 	template<typename T>
 	using ComPtr = Microsoft::WRL::ComPtr<T>;
 
@@ -29,24 +29,40 @@ public:
 
 	using VertexType = Vertex;
 
-	StaticMesh(ComPtr<ID3D11Device> device, std::weak_ptr<MeshAsset> asset) 
-		: m_device(device), m_meshAsset(asset)
+	struct CreateInfo {
+		// @TODO: remove usage of vector here
+		std::vector<float3>& positions;
+		std::vector<float3>& normals;
+		std::vector<float3>& tangents;
+		std::vector<float3>& colors;
+		std::vector<float2>& uv0s;
+		std::vector<float2>& uv1s;
+
+		std::vector<u32>& indices;
+	};
+
+	DX11Mesh(ComPtr<ID3D11Device> device, const CreateInfo& info) 
 	{
-		CreateBuffers();
+		Create(device, info);
 	}
+
+	void Create(ComPtr<ID3D11Device> device, const CreateInfo& info);
 
 	inline ComPtr<ID3D11Buffer> GetVertexBuffer() {
 		return m_vertexBuffer;
 	}
 
+	// @TODO: hardcoded
 	inline u32 GetVertexBufferCount() {
 		return 1;
 	}
 
+	// @TODO: hardcoded
 	inline std::array<u32, 1> GetVertexBufferOffsets() {
 		return std::array<u32, 1> { 0 };
 	}
 
+	// @TODO: hardcoded
 	inline std::array<u32, 1> GetVertexBufferStrides() {
 		return std::array<u32, 1> { sizeof(VertexType) };
 	}
@@ -55,36 +71,26 @@ public:
 		return m_indexBuffer;
 	}
 
+	// @TODO: hardcoded
 	inline DXGI_FORMAT GetIndexBufferFormat() {
 		return DXGI_FORMAT_R32_UINT;
 	}
 
-	inline uint GetVertexCount() {
-		if(auto ma = m_meshAsset.lock(); ma != nullptr) {
-			return static_cast<uint>(ma->GetPositions().size());
-		}
-
-		return 0;
+	inline uint GetVertexCount() { 
+		return m_vertexCount;
 	}
 
-	inline uint GetIndexCount() {
-		if(auto ma = m_meshAsset.lock(); ma != nullptr) {
-			return static_cast<uint>(ma->GetIndices().size());
-		}
-
-		return 0;
+	inline uint GetIndexCount() { 
+		return m_indexCount;
 	}
 
 private:
-
-	void CreateBuffers();
-	
-	ComPtr<ID3D11Device> m_device;
 
 	// @TODO: SOA vertex stream?
 	ComPtr<ID3D11Buffer> m_vertexBuffer;
 	ComPtr<ID3D11Buffer> m_indexBuffer;
 
-	std::weak_ptr<MeshAsset> m_meshAsset;
+	uint m_vertexCount = 0;
+	uint m_indexCount = 0;
 };
 

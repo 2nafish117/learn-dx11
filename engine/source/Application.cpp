@@ -4,18 +4,21 @@
 #include <flags.h>
 
 #include "DX11/DX11Context.hpp"
-#include "Shader.hpp"
 #include "AssetSystem.hpp"
 #include "SceneSystem.hpp"
 
 #include <GLFW/glfw3.h>
 
+namespace global
+{
+	DX11Context* rendererSystem = nullptr;
+}
 
 #pragma region glfw callbacks
 
 void WindowSizeCallback(GLFWwindow* window, int width, int height) {
 	void* user = glfwGetWindowUserPointer(window);
-	ASSERT(user != nullptr, "");
+	ENSURE(user != nullptr, "");
 	Application* application = (Application*)user;
 
 	application->OnWindowResize(window);
@@ -57,6 +60,7 @@ Application::~Application()
 	{
 		delete global::assetSystem;
 		delete global::sceneSystem;
+		delete global::rendererSystem;
 	}
 }
 
@@ -85,13 +89,16 @@ int Application::Run()
 		return -1;
 	}
 
-	m_renderer = std::make_unique<DX11Context>(m_window);
+	//m_renderer = std::make_unique<DX11Context>(m_window);
+	global::rendererSystem = new DX11Context(m_window);
+
+	global::assetSystem->RegisterAssets();
 
 	while (!glfwWindowShouldClose(m_window))
 	{
 		glfwPollEvents();
 		
-		m_renderer->Render();
+		global::rendererSystem->Render(*global::sceneSystem->runtimeScene.get());
 	}
 
 	glfwDestroyWindow(m_window);
@@ -107,5 +114,5 @@ void Application::OnWindowResize(GLFWwindow* window)
 {
 	int width, height;
 	glfwGetWindowSize(window, &width, &height);
-	m_renderer->HandleResize(width, height);
+	global::rendererSystem->HandleResize(width, height);
 }
