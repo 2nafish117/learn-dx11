@@ -461,8 +461,6 @@ void DX11Context::Render(const RuntimeScene& scene)
 	modelToWorld = modelToWorld * rotMatrix;
 	modelToWorld = modelToWorld * transMatrix;
 
-	//scene.camera->xform.matrix = DirectX::XMMatrixTranslation(0, 0, -3);
-
 	mat4 worldToCam = scene.camera->GetView();
 	mat4 CamToProjection = scene.camera->GetProjection();
 

@@ -58,9 +58,9 @@ Application::~Application()
 {
 	// deinit global systems
 	{
+		delete global::rendererSystem;
 		delete global::assetSystem;
 		delete global::sceneSystem;
-		delete global::rendererSystem;
 	}
 }
 
@@ -89,7 +89,6 @@ int Application::Run()
 		return -1;
 	}
 
-	//m_renderer = std::make_unique<DX11Context>(m_window);
 	global::rendererSystem = new DX11Context(m_window);
 
 	global::assetSystem->RegisterAssets();
