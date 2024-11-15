@@ -93,15 +93,40 @@ public:
 	}
 
 	// @TODO: mesh asset is not shallow copyable, make them shallow copyable
-	MeshID RegisterMeshAsset(MeshAsset&& asset) { m_meshAssets.emplace_back(asset); return {0}; }
-	ShaderID RegisterShaderAsset(ShaderAsset&& asset) { m_shaderAssets.emplace_back(asset); return {0}; }
-	TextureID RegisterTextureAsset(TextureAsset&& asset) { m_textureAssets.emplace_back(asset); return {0}; }
+	MeshID RegisterMeshAsset(MeshAsset&& asset) 
+	{
+		m_meshAssets.emplace_back(asset);
+		MeshID id = { m_meshAssets.size() - 1 };
+		return id;
+	}
+	ShaderID RegisterShaderAsset(ShaderAsset&& asset)
+	{
+		m_shaderAssets.emplace_back(asset);
+		ShaderID id = { m_shaderAssets.size() - 1 };
+		return id;
+	}
+	TextureID RegisterTextureAsset(TextureAsset&& asset)
+	{
+		m_textureAssets.emplace_back(asset);
+		TextureID id = { m_textureAssets.size() - 1 };
+		return id;
+	}
 
-	const MeshAsset& GetMeshAsset(MeshID id) const { return m_meshAssets[id.value]; }
-	const ShaderAsset& GetShaderAsset(ShaderID id) const { 
+	const MeshAsset& GetMeshAsset(MeshID id) const 
+	{
+		ENSURE(id.value >= 0 && id.value < m_meshAssets.size());
+		return m_meshAssets[id.value];
+	}
+	const ShaderAsset& GetShaderAsset(ShaderID id) const 
+	{
+		ENSURE(id.value >= 0 && id.value < m_shaderAssets.size());
 		return m_shaderAssets[id.value];
 	}
-	const TextureAsset& GetTextureAsset(TextureID id) const { return m_textureAssets[id.value]; }
+	const TextureAsset& GetTextureAsset(TextureID id) const 
+	{
+		ENSURE(id.value >= 0 && id.value < m_textureAssets.size());
+		return m_textureAssets[id.value];
+	}
 
 private:
 	std::vector<MeshAsset> m_meshAssets;

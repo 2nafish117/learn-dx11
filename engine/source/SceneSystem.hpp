@@ -20,11 +20,7 @@ class Transform;
 
 class RuntimeScene {
 public:
-	RuntimeScene() {
-		camera = std::make_shared<CameraEntity>();
-		staticMeshEntity0 = std::make_shared<StaticMeshEntity>();
-		staticMeshEntity1 = std::make_shared<StaticMeshEntity>();
-	}
+	RuntimeScene();
 public:
 	std::shared_ptr<CameraEntity> camera;
 	std::shared_ptr<StaticMeshEntity> staticMeshEntity0;
@@ -73,13 +69,13 @@ public:
 	float farZ = 100.0f;
 
 public:
-    inline mat4 GetView() {
-        return DirectX::XMMatrixInverse(nullptr, xform.matrix);
-    }
+	inline mat4 GetView() {
+		return DirectX::XMMatrixInverse(nullptr, xform.matrix);
+	}
 
-    inline mat4 GetProjection() {
-        return DirectX::XMMatrixPerspectiveFovLH(fov, aspect, nearZ, farZ);
-    }
+	inline mat4 GetProjection() {
+		return DirectX::XMMatrixPerspectiveFovLH(fov, aspect, nearZ, farZ);
+	}
 
 private:
 };
@@ -88,10 +84,8 @@ private:
 class StaticMeshEntity : public Entity {
 public:
 	MeshID meshAsset = { 0 };
-	// @TODO: hardcoded!!!!!!!!!!!!!!!!!!!!!!
 	ShaderID vertShaderAsset = { 0 };
-	ShaderID pixShaderAsset = { 1 };
-
+	ShaderID pixShaderAsset = { 0 };
 	TextureID texAsset = { 0 };
 private:
 };

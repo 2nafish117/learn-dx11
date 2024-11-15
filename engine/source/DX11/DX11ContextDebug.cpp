@@ -4093,6 +4093,16 @@ void DX11Context::LogDebugInfo()
 	m_debugInfoQueue->ClearStoredMessages();
 }
 
+void DX11Context::ReportLiveDeviceObjects()
+{
+	if (auto res = m_debug->ReportLiveDeviceObjects(D3D11_RLDO_FLAGS::D3D11_RLDO_DETAIL); FAILED(res)) {
+		DXERROR(res);
+	}
+	
+	// @TODO: is this different from above code?
+	//m_dxgiDebug->ReportLiveObjects()
+}
+
 void DX11Context::VerifyGraphicsPipeline() {
 	if(auto res = m_debug->ValidateContext(m_deviceContext.Get()); FAILED(res)) {
 		DXERROR(res);

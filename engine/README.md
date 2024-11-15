@@ -5,10 +5,8 @@
 3. parallax mapping
 4. parallax occlusion mapping
 5. skybox rendering
-6. assets explicit load function for hotloading 
 7. Input system, input events
 8. allocators / std memory resource stuff?
-9. scene system, scene class
 10. entities
 11. PBR
 12. screen space AO

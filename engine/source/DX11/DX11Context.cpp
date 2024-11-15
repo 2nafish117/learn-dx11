@@ -28,7 +28,6 @@ DX11Context::DX11Context(GLFWwindow* window)
 
 	UINT factoryCreateFlags = 0;
 
-// @TODO: make a DXDEBUG flag
 #ifdef DX11_DEBUG
 	factoryCreateFlags |= D3D11_CREATE_DEVICE_FLAG::D3D11_CREATE_DEVICE_DEBUG;
 #endif
@@ -63,11 +62,13 @@ DX11Context::DX11Context(GLFWwindow* window)
 	}
 
 	// @TODO: flags?
-	if (auto res = DXGIGetDebugInterface1(0, IID_PPV_ARGS(&m_dxgiDebug)); FAILED(res)) {
+	UINT flags = 0;
+	if (auto res = DXGIGetDebugInterface1(flags, IID_PPV_ARGS(&m_dxgiDebug)); FAILED(res)) {
 		DXERROR(res);
 	}
 #endif
 
+	// @TODO: multi buffering
 	CreateSwapchain(m_window, 1);
 	ObtainSwapchainResources();
 
@@ -174,45 +175,6 @@ DX11Context::DX11Context(GLFWwindow* window)
 
 	shaderCompiler = std::make_unique<ShaderCompiler>(new ShaderIncluder());
 
-	D3D11_INPUT_ELEMENT_DESC inputElementDescs[] = {
-		{
-			.SemanticName = "POSITION",
-			.SemanticIndex = 0,
-			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT,
-			.InputSlot = 0,
-			.AlignedByteOffset = 0,
-			.InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
-			.InstanceDataStepRate = 0,
-		},
-		{
-			.SemanticName = "NORMAL",
-			.SemanticIndex = 0,
-			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT,
-			.InputSlot = 0,
-			.AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT,
-			.InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
-			.InstanceDataStepRate = 0,
-		},
-		{
-			.SemanticName = "COLOR",
-			.SemanticIndex = 0,
-			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT,
-			.InputSlot = 0,
-			.AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT,
-			.InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
-			.InstanceDataStepRate = 0,
-		},
-		{
-			.SemanticName = "TEXCOORD",
-			.SemanticIndex = 0,
-			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32_FLOAT,
-			.InputSlot = 0,
-			.AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT,
-			.InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
-			.InstanceDataStepRate = 0,
-		}
-	};
-
 	D3D11_BUFFER_DESC matrixBufferDesc = {
 		.ByteWidth = sizeof(MatrixBuffer),
 		.Usage = D3D11_USAGE::D3D11_USAGE_DYNAMIC,
@@ -251,13 +213,7 @@ DX11Context::~DX11Context()
 	// @TODO: this is kinda stupid because the lifetimes of the dx objects are tied to the lifetimes of the renderer
 	// and running this at in the destructor of renderer means they havent been destroyed yet
 	// so it will report that all objects are still alive, where should i run this then? pull it out of the renderer?
-	if (auto res = m_debug->ReportLiveDeviceObjects(D3D11_RLDO_FLAGS::D3D11_RLDO_DETAIL); FAILED(res)) {
-		DXERROR(res);
-	}
-
-	// @TODO: is this different from above code?
-	//m_dxgiDebug->ReportLiveObjects()
-
+	ReportLiveDeviceObjects();
 #endif
 
 	ImGui_ImplDX11_Shutdown();
@@ -498,16 +454,14 @@ void DX11Context::Render(const RuntimeScene& scene)
 	float moveX = 0.5f * DirectX::XMScalarSin(time * 2.0f);
 	float moveY = 0.5f * DirectX::XMScalarSin(time * 2.0f);
 	auto rotMatrix = DirectX::XMMatrixRotationY(angle + DirectX::XM_PI);
-	//auto rotMatrix = DirectX::XMMatrixTranslation(angle, 0, 0);
-	//auto rotMatrix = DirectX::XMMatrixIdentity();
 
 	auto transMatrix = DirectX::XMMatrixTranslation(moveX, moveY, 0);
 
-	DirectX::XMMATRIX modelToWorld = DirectX::XMMatrixIdentity();
+	DirectX::XMMATRIX modelToWorld = scene.staticMeshEntity0->xform.matrix;
 	modelToWorld = modelToWorld * rotMatrix;
 	modelToWorld = modelToWorld * transMatrix;
 
-	scene.camera->xform.matrix = DirectX::XMMatrixTranslation(0, 0, -3);
+	//scene.camera->xform.matrix = DirectX::XMMatrixTranslation(0, 0, -3);
 
 	mat4 worldToCam = scene.camera->GetView();
 	mat4 CamToProjection = scene.camera->GetProjection();

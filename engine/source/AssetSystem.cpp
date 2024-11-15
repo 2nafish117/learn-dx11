@@ -496,11 +496,26 @@ void ShaderAsset::InitRendererResource()
 
 void AssetSystem::RegisterAssets()
 {
+	// @TODO: currently we dont unload anything, there needs to be a system that decides on scene transition, 
+	// or something more dynamic that loads and unloads resources from disk
 	{
-		MeshID mid = m_catalog->RegisterMeshAsset(MeshAsset("meshes/suzanne.glb"));
-		MeshAsset& ma = const_cast<MeshAsset&>(m_catalog->GetMeshAsset(mid));
-		ma.Load();
+		MeshID id = m_catalog->RegisterMeshAsset(MeshAsset("meshes/suzanne.glb"));
+		MeshAsset& asset = const_cast<MeshAsset&>(m_catalog->GetMeshAsset(id));
+		asset.Load();
 	}
+
+	{
+		MeshID id = m_catalog->RegisterMeshAsset(MeshAsset("meshes/two_cubes.glb"));
+		MeshAsset& asset = const_cast<MeshAsset&>(m_catalog->GetMeshAsset(id));
+		asset.Load();
+	}
+
+	{
+		MeshID id = m_catalog->RegisterMeshAsset(MeshAsset("meshes/scene1.glb"));
+		MeshAsset& asset = const_cast<MeshAsset&>(m_catalog->GetMeshAsset(id));
+		asset.Load();
+	}
+
 
 	// @TODO: register a quad
 	// std::vector<StaticMesh::Vertex> vertices = {
@@ -539,16 +554,23 @@ void AssetSystem::RegisterAssets()
 	//	0, 3, 1
 	//};
 
-	//(void)m_catalog->RegisterMeshAsset(MeshAsset("meshes/two_cubes.glb"));
-	//(void)m_catalog->RegisterMeshAsset(MeshAsset("meshes/scene1.glb"));
+	{
+		ShaderID id = m_catalog->RegisterShaderAsset(ShaderAsset(ShaderAsset::Kind::Vertex, L"shaders/simple_vs.hlsl", "VSMain", "vs_5_0"));
+		global::rendererSystem->shaderCompiler->CompileShaderAsset(id);
+		ShaderAsset& asset = const_cast<ShaderAsset&>(m_catalog->GetShaderAsset(id));
+		asset.Load();
+	}
 
-	ShaderID sid0 = m_catalog->RegisterShaderAsset(ShaderAsset(ShaderAsset::Kind::Vertex, L"shaders/simple_vs.hlsl", "VSMain", "vs_5_0"));
-	global::rendererSystem->shaderCompiler->CompileShaderAsset({0});
-	const_cast<ShaderAsset&>(m_catalog->GetShaderAsset({0})).Load();
-	ShaderID sid1 = m_catalog->RegisterShaderAsset(ShaderAsset(ShaderAsset::Kind::Pixel, L"shaders/simple_ps.hlsl", "PSMain", "ps_5_0"));
-	global::rendererSystem->shaderCompiler->CompileShaderAsset({1});
-	const_cast<ShaderAsset&>(m_catalog->GetShaderAsset({1})).Load();
+	{
+		ShaderID id = m_catalog->RegisterShaderAsset(ShaderAsset(ShaderAsset::Kind::Pixel, L"shaders/simple_ps.hlsl", "PSMain", "ps_5_0"));
+		global::rendererSystem->shaderCompiler->CompileShaderAsset(id);
+		ShaderAsset& asset = const_cast<ShaderAsset&>(m_catalog->GetShaderAsset(id));
+		asset.Load();
+	}
 
-	TextureID tid = m_catalog->RegisterTextureAsset(TextureAsset("textures/checker.png"));
-	const_cast<TextureAsset&>(m_catalog->GetTextureAsset(tid)).Load();
+	{
+		TextureID id = m_catalog->RegisterTextureAsset(TextureAsset("textures/checker.png"));
+		TextureAsset& asset = const_cast<TextureAsset&>(m_catalog->GetTextureAsset(id));
+		asset.Load();
+	}
 }

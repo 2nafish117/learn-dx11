@@ -76,6 +76,8 @@ private:
 	// but can be called anytime during Render
 	void LogDebugInfo();
 
+	void ReportLiveDeviceObjects();
+
 	// @TODO: should these be in the utilities?
 	void VerifyGraphicsPipeline();
 	void VerifyComputePipeline();

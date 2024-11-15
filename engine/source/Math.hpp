@@ -11,3 +11,4 @@ using mat4 = DirectX::XMMATRIX;
 
 using vec4 = DirectX::XMVECTOR;
 using quat = DirectX::XMVECTOR;
+
