@@ -109,6 +109,16 @@ private:
 	ComPtr<ID3D11RasterizerState> m_rasterState;
 	ComPtr<ID3D11DepthStencilState> m_depthStencilState;
 
+	struct GBufferData {
+		ComPtr<ID3D11Texture2D> positionTexture;
+		ComPtr<ID3D11RenderTargetView> positionRTV;
+
+		ComPtr<ID3D11Texture2D> normalTexture;
+		ComPtr<ID3D11RenderTargetView> normalRTV;
+	};
+
+	GBufferData m_gbufferData;
+
 	D3D11_VIEWPORT m_viewport = {};
 
 	ComPtr<ID3D11Buffer> m_matrixBuffer;

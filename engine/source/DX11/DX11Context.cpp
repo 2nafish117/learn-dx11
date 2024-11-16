@@ -209,6 +209,81 @@ DX11Context::DX11Context(GLFWwindow* window)
 		DXERROR(res);
 	}
 
+	// make textures and rtv for gbuffer
+	if(0)
+	{
+		D3D11_TEXTURE2D_DESC positionDesc = {
+			.Width = static_cast<UINT>(width),
+			.Height = static_cast<UINT>(height),
+			.MipLevels = 1,
+			.ArraySize = 1,
+			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT,
+			.SampleDesc = {
+				.Count = 1,
+				.Quality = 0,
+			},
+			.Usage = D3D11_USAGE::D3D11_USAGE_DEFAULT,
+			.BindFlags = D3D11_BIND_RENDER_TARGET,
+			.CPUAccessFlags = 0,
+			.MiscFlags = 0,
+		};
+		
+		// @TODO: DXERROR will not print if an api call crashes sometimes, do the DXCALL macro stuff i guess?
+		if (auto res = m_device->CreateTexture2D(&positionDesc, nullptr, &m_gbufferData.positionTexture); FAILED(res)) {
+			DXERROR(res);
+		}
+
+		D3D11_RENDER_TARGET_VIEW_DESC positionRTVDesc = {
+			// this format cant be used for a rendertarget view, i guess nvdia doesnt let you do that?
+			// use another format
+			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT,
+			.ViewDimension = D3D11_RTV_DIMENSION::D3D11_RTV_DIMENSION_TEXTURE2D,
+			.Texture2D = { 
+				.MipSlice = 0,
+			},
+		};
+
+		if (auto res = m_device->CreateRenderTargetView(m_gbufferData.positionTexture.Get(), &positionRTVDesc, &m_gbufferData.positionRTV); FAILED(res)) {
+			DXERROR(res);
+		}
+
+		//m_device->CheckFormatSupport();
+
+		D3D11_TEXTURE2D_DESC normalDesc = {
+			.Width = static_cast<UINT>(width),
+			.Height = static_cast<UINT>(height),
+			.MipLevels = 1,
+			.ArraySize = 1,
+			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT,
+			.SampleDesc = {
+				.Count = 1,
+				.Quality = 0,
+			},
+			.Usage = D3D11_USAGE::D3D11_USAGE_DEFAULT,
+			.BindFlags = D3D11_BIND_RENDER_TARGET,
+			.CPUAccessFlags = 0,
+			.MiscFlags = 0,
+		};
+
+		if (auto res = m_device->CreateTexture2D(&normalDesc, nullptr, &m_gbufferData.normalTexture); FAILED(res)) {
+			DXERROR(res);
+		}
+
+		D3D11_RENDER_TARGET_VIEW_DESC normalRTVDesc = {
+			// this format cant be used for a rendertarget view, i guess nvdia doesnt let you do that?
+			// use another format
+			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT,
+			.ViewDimension = D3D11_RTV_DIMENSION::D3D11_RTV_DIMENSION_TEXTURE2D,
+			.Texture2D = {
+				.MipSlice = 0
+			},
+		};
+
+		if (auto res = m_device->CreateRenderTargetView(m_gbufferData.normalTexture.Get(), &normalRTVDesc, &m_gbufferData.normalRTV); FAILED(res)) {
+			DXERROR(res);
+		}
+	}
+
 	InitImgui();
 }
 
@@ -591,6 +666,7 @@ void DX11Context::Render(const RuntimeScene& scene)
 	m_deviceContext->PSSetConstantBuffers(0, 1, m_pointLightBuffer.GetAddressOf());
 	m_deviceContext->PSSetConstantBuffers(1, 1, m_matrixBuffer.GetAddressOf());
 
+	//@TODO: render ws_position, ws_normal, albedo, ...
 	m_deviceContext->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), m_depthStencilView.Get());
 
 	m_deviceContext->DrawIndexed(rendererMesh->GetIndexCount(), 0, 0);
