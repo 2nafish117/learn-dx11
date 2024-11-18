@@ -80,7 +80,10 @@ DX11Context::DX11Context(GLFWwindow* window)
 	CreateSwapchain(m_window, 3);
 	ObtainSwapchainResources();
 
-	int width, height;
+	// @TODO: query device for supported texture formats
+	//m_device->CheckFormatSupport();
+
+	int width = 0, height = 0;
 	glfwGetWindowSize(m_window, &width, &height);
 
 	D3D11_TEXTURE2D_DESC depthStencilTexDesc = {
@@ -209,82 +212,110 @@ DX11Context::DX11Context(GLFWwindow* window)
 		DXERROR(res);
 	}
 
-	// make textures and rtv for gbuffer
-	if(0)
-	{
-		D3D11_TEXTURE2D_DESC positionDesc = {
-			.Width = static_cast<UINT>(width),
-			.Height = static_cast<UINT>(height),
-			.MipLevels = 1,
-			.ArraySize = 1,
-			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT,
-			.SampleDesc = {
-				.Count = 1,
-				.Quality = 0,
-			},
-			.Usage = D3D11_USAGE::D3D11_USAGE_DEFAULT,
-			.BindFlags = D3D11_BIND_RENDER_TARGET,
-			.CPUAccessFlags = 0,
-			.MiscFlags = 0,
-		};
-		
-		// @TODO: DXERROR will not print if an api call crashes sometimes, do the DXCALL macro stuff i guess?
-		if (auto res = m_device->CreateTexture2D(&positionDesc, nullptr, &m_gbufferData.positionTexture); FAILED(res)) {
-			DXERROR(res);
-		}
-
-		D3D11_RENDER_TARGET_VIEW_DESC positionRTVDesc = {
-			// this format cant be used for a rendertarget view, i guess nvdia doesnt let you do that?
-			// use another format
-			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT,
-			.ViewDimension = D3D11_RTV_DIMENSION::D3D11_RTV_DIMENSION_TEXTURE2D,
-			.Texture2D = { 
-				.MipSlice = 0,
-			},
-		};
-
-		if (auto res = m_device->CreateRenderTargetView(m_gbufferData.positionTexture.Get(), &positionRTVDesc, &m_gbufferData.positionRTV); FAILED(res)) {
-			DXERROR(res);
-		}
-
-		//m_device->CheckFormatSupport();
-
-		D3D11_TEXTURE2D_DESC normalDesc = {
-			.Width = static_cast<UINT>(width),
-			.Height = static_cast<UINT>(height),
-			.MipLevels = 1,
-			.ArraySize = 1,
-			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT,
-			.SampleDesc = {
-				.Count = 1,
-				.Quality = 0,
-			},
-			.Usage = D3D11_USAGE::D3D11_USAGE_DEFAULT,
-			.BindFlags = D3D11_BIND_RENDER_TARGET,
-			.CPUAccessFlags = 0,
-			.MiscFlags = 0,
-		};
-
-		if (auto res = m_device->CreateTexture2D(&normalDesc, nullptr, &m_gbufferData.normalTexture); FAILED(res)) {
-			DXERROR(res);
-		}
-
-		D3D11_RENDER_TARGET_VIEW_DESC normalRTVDesc = {
-			// this format cant be used for a rendertarget view, i guess nvdia doesnt let you do that?
-			// use another format
-			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT,
-			.ViewDimension = D3D11_RTV_DIMENSION::D3D11_RTV_DIMENSION_TEXTURE2D,
-			.Texture2D = {
-				.MipSlice = 0
-			},
-		};
-
-		if (auto res = m_device->CreateRenderTargetView(m_gbufferData.normalTexture.Get(), &normalRTVDesc, &m_gbufferData.normalRTV); FAILED(res)) {
-			DXERROR(res);
-		}
-	}
+	CreateGbuffer(static_cast<uint>(width), static_cast<uint>(height));
 
 	InitImgui();
+}
+
+void DX11Context::CreateGbuffer(uint width, uint height)
+{
+	D3D11_TEXTURE2D_DESC albedoDesc = {
+			.Width = width,
+			.Height = height,
+			.MipLevels = 1,
+			.ArraySize = 1,
+			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT,
+			.SampleDesc = {
+				.Count = 1,
+				.Quality = 0,
+			},
+			.Usage = D3D11_USAGE::D3D11_USAGE_DEFAULT,
+			.BindFlags = D3D11_BIND_RENDER_TARGET,
+			.CPUAccessFlags = 0,
+			.MiscFlags = 0,
+	};
+
+	// @TODO: DXERROR will not print if an api call crashes sometimes, do the DXCALL macro stuff i guess?
+	if (auto res = m_device->CreateTexture2D(&albedoDesc, nullptr, &m_gbufferData.albedoTexture); FAILED(res)) {
+		DXERROR(res);
+	}
+
+	D3D11_RENDER_TARGET_VIEW_DESC albedoRTVDesc = {
+		.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT,
+		.ViewDimension = D3D11_RTV_DIMENSION::D3D11_RTV_DIMENSION_TEXTURE2D,
+		.Texture2D = {
+			.MipSlice = 0,
+		},
+	};
+
+	if (auto res = m_device->CreateRenderTargetView(m_gbufferData.albedoTexture.Get(), &albedoRTVDesc, &m_gbufferData.albedoRTV); FAILED(res)) {
+		DXERROR(res);
+	}
+
+	D3D11_TEXTURE2D_DESC positionDesc = {
+		.Width = width,
+		.Height = height,
+		.MipLevels = 1,
+		.ArraySize = 1,
+		.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT,
+		.SampleDesc = {
+			.Count = 1,
+			.Quality = 0,
+		},
+		.Usage = D3D11_USAGE::D3D11_USAGE_DEFAULT,
+		.BindFlags = D3D11_BIND_RENDER_TARGET,
+		.CPUAccessFlags = 0,
+		.MiscFlags = 0,
+	};
+
+	// @TODO: DXERROR will not print if an api call crashes sometimes, do the DXCALL macro stuff i guess?
+	if (auto res = m_device->CreateTexture2D(&positionDesc, nullptr, &m_gbufferData.wsPositionTexture); FAILED(res)) {
+		DXERROR(res);
+	}
+
+	D3D11_RENDER_TARGET_VIEW_DESC positionRTVDesc = {
+		.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT,
+		.ViewDimension = D3D11_RTV_DIMENSION::D3D11_RTV_DIMENSION_TEXTURE2D,
+		.Texture2D = {
+			.MipSlice = 0,
+		},
+	};
+
+	if (auto res = m_device->CreateRenderTargetView(m_gbufferData.wsPositionTexture.Get(), &positionRTVDesc, &m_gbufferData.wsPositionRTV); FAILED(res)) {
+		DXERROR(res);
+	}
+
+	D3D11_TEXTURE2D_DESC normalDesc = {
+		.Width = width,
+		.Height = height,
+		.MipLevels = 1,
+		.ArraySize = 1,
+		.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT,
+		.SampleDesc = {
+			.Count = 1,
+			.Quality = 0,
+		},
+		.Usage = D3D11_USAGE::D3D11_USAGE_DEFAULT,
+		.BindFlags = D3D11_BIND_RENDER_TARGET,
+		.CPUAccessFlags = 0,
+		.MiscFlags = 0,
+	};
+
+	if (auto res = m_device->CreateTexture2D(&normalDesc, nullptr, &m_gbufferData.wsNormalTexture); FAILED(res)) {
+		DXERROR(res);
+	}
+
+	D3D11_RENDER_TARGET_VIEW_DESC normalRTVDesc = {
+		.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT,
+		.ViewDimension = D3D11_RTV_DIMENSION::D3D11_RTV_DIMENSION_TEXTURE2D,
+		.Texture2D = {
+			.MipSlice = 0
+		},
+	};
+
+	if (auto res = m_device->CreateRenderTargetView(m_gbufferData.wsNormalTexture.Get(), &normalRTVDesc, &m_gbufferData.wsNormalRTV); FAILED(res)) {
+		DXERROR(res);
+	}
 }
 
 DX11Context::~DX11Context()
@@ -545,7 +576,6 @@ void DX11Context::Render(const RuntimeScene& scene)
 	
 	// ImGui::End();
 
-
 	// begin render
 	const float clearColor[4] = {0.2f, 0.1f, 0.1f, 1.0f};
 	m_deviceContext->ClearRenderTargetView(m_renderTargetView.Get(), clearColor);
@@ -666,8 +696,10 @@ void DX11Context::Render(const RuntimeScene& scene)
 	m_deviceContext->PSSetConstantBuffers(0, 1, m_pointLightBuffer.GetAddressOf());
 	m_deviceContext->PSSetConstantBuffers(1, 1, m_matrixBuffer.GetAddressOf());
 
+	ID3D11RenderTargetView* renderTargets[] = { m_renderTargetView.Get() };
+
 	//@TODO: render ws_position, ws_normal, albedo, ...
-	m_deviceContext->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), m_depthStencilView.Get());
+	m_deviceContext->OMSetRenderTargets(ARRLEN(renderTargets), renderTargets, m_depthStencilView.Get());
 
 	m_deviceContext->DrawIndexed(rendererMesh->GetIndexCount(), 0, 0);
 
@@ -754,105 +786,95 @@ void DX11Context::InitImgui() {
 		font_config.MergeMode = false;
 	}
 
-	// style imgui
-	// @TODO: not highlight state on buttons with this style, fix.
-	if(0)
+#define IMGUI_STYLE
+#ifdef IMGUI_STYLE
+	bool bStyleDark_ = true;
+	float alpha_ = 0.9f;
+
+	ImGuiStyle& style = ImGui::GetStyle();
+
+	// light style from Pacôme Danhiez (user itamago) https://github.com/ocornut/imgui/pull/511#issuecomment-175719267
+	style.Alpha = 1.0f;
+	style.FrameRounding = 3.0f;
+	style.Colors[ImGuiCol_Text] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+	style.Colors[ImGuiCol_TextDisabled] = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
+	style.Colors[ImGuiCol_WindowBg] = ImVec4(0.94f, 0.94f, 0.94f, 0.94f);
+	//style.Colors[ImGuiCol_ChildWindowBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+	style.Colors[ImGuiCol_PopupBg] = ImVec4(1.00f, 1.00f, 1.00f, 0.94f);
+	style.Colors[ImGuiCol_Border] = ImVec4(0.00f, 0.00f, 0.00f, 0.39f);
+	style.Colors[ImGuiCol_BorderShadow] = ImVec4(1.00f, 1.00f, 1.00f, 0.10f);
+	style.Colors[ImGuiCol_FrameBg] = ImVec4(1.00f, 1.00f, 1.00f, 0.94f);
+	style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.40f);
+	style.Colors[ImGuiCol_FrameBgActive] = ImVec4(0.26f, 0.59f, 0.98f, 0.67f);
+	style.Colors[ImGuiCol_TitleBg] = ImVec4(0.96f, 0.96f, 0.96f, 1.00f);
+	style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(1.00f, 1.00f, 1.00f, 0.51f);
+	style.Colors[ImGuiCol_TitleBgActive] = ImVec4(0.82f, 0.82f, 0.82f, 1.00f);
+	style.Colors[ImGuiCol_MenuBarBg] = ImVec4(0.86f, 0.86f, 0.86f, 1.00f);
+	style.Colors[ImGuiCol_ScrollbarBg] = ImVec4(0.98f, 0.98f, 0.98f, 0.53f);
+	style.Colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.69f, 0.69f, 0.69f, 1.00f);
+	style.Colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.59f, 0.59f, 0.59f, 1.00f);
+	style.Colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.49f, 0.49f, 0.49f, 1.00f);
+	//style.Colors[ImGuiCol_ComboBg] = ImVec4(0.86f, 0.86f, 0.86f, 0.99f);
+	style.Colors[ImGuiCol_CheckMark] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+	style.Colors[ImGuiCol_SliderGrab] = ImVec4(0.24f, 0.52f, 0.88f, 1.00f);
+	style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+	style.Colors[ImGuiCol_Button] = ImVec4(0.26f, 0.59f, 0.98f, 0.40f);
+	style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+	style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.06f, 0.53f, 0.98f, 1.00f);
+	style.Colors[ImGuiCol_Header] = ImVec4(0.26f, 0.59f, 0.98f, 0.31f);
+	style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.80f);
+	style.Colors[ImGuiCol_HeaderActive] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+	//style.Colors[ImGuiCol_Column] = ImVec4(0.39f, 0.39f, 0.39f, 1.00f);
+	//style.Colors[ImGuiCol_ColumnHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.78f);
+	//style.Colors[ImGuiCol_ColumnActive] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+	style.Colors[ImGuiCol_ResizeGrip] = ImVec4(0.26f, 0.59f, 0.98f, 0.37f);
+	style.Colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.67f);
+	style.Colors[ImGuiCol_ResizeGripActive] = ImVec4(0.26f, 0.59f, 0.98f, 0.95f);
+	//style.Colors[ImGuiCol_CloseButton] = ImVec4(0.59f, 0.59f, 0.59f, 0.50f);
+	//style.Colors[ImGuiCol_CloseButtonHovered] = ImVec4(0.98f, 0.39f, 0.36f, 1.00f);
+	//style.Colors[ImGuiCol_CloseButtonActive] = ImVec4(0.98f, 0.39f, 0.36f, 1.00f);
+	style.Colors[ImGuiCol_PlotLines] = ImVec4(0.39f, 0.39f, 0.39f, 1.00f);
+	style.Colors[ImGuiCol_PlotLinesHovered] = ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
+	style.Colors[ImGuiCol_PlotHistogram] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
+	style.Colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
+	style.Colors[ImGuiCol_TextSelectedBg] = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
+	//style.Colors[ImGuiCol_ModalWindowDarkening] = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
+
+	if (bStyleDark_)
 	{
-		ImGuiStyle& style = ImGui::GetStyle();
+		for (int i = 0; i <= ImGuiCol_COUNT; i++)
+		{
+			ImVec4& col = style.Colors[i];
+			float H, S, V;
+			ImGui::ColorConvertRGBtoHSV(col.x, col.y, col.z, H, S, V);
 
-		const ImVec4 tone_text_1 = {0.69f, 0.69f, 0.69f, 1.0f};
-		const ImVec4 tone_text_2 = {0.69f, 0.69f, 0.69f, 0.8f};
-
-		ImVec4 tone_1 = {0.16f, 0.16f, 0.28f, 1.0f};
-		ImVec4 tone_1_b = {tone_1.x * 1.2f, tone_1.y * 1.2f, tone_1.z * 1.2f, tone_1.w * 1.2f};
-		ImVec4 tone_1_e = {tone_1.x * 1.2f, tone_1.y * 1.2f, tone_1.z * 1.2f, tone_1.w * 1.2f};
-		ImVec4 tone_1_e_a = tone_1_e;
-		ImVec4 tone_3 = {0.11f, 0.11f, 0.18f, 1.0};
-		ImVec4 tone_2 = tone_3;
-		ImVec4 tone_2_b = tone_2;
-
-		style.Colors[ImGuiCol_Text] = tone_text_1;
-		style.Colors[ImGuiCol_TextDisabled] = tone_text_2;
-		style.Colors[ImGuiCol_WindowBg] = tone_1;
-		style.Colors[ImGuiCol_ChildBg] = tone_2;
-		style.Colors[ImGuiCol_PopupBg] = tone_2_b;
-		style.Colors[ImGuiCol_Border] = tone_2;
-		style.Colors[ImGuiCol_BorderShadow] = {0.0, 0.0, 0.0, 0.0};
-		style.Colors[ImGuiCol_FrameBg] = tone_3;
-		style.Colors[ImGuiCol_FrameBgHovered] = tone_3;
-		style.Colors[ImGuiCol_FrameBgActive] = tone_3;
-		style.Colors[ImGuiCol_TitleBg] = tone_2;
-		style.Colors[ImGuiCol_TitleBgActive] = tone_2;
-		style.Colors[ImGuiCol_TitleBgCollapsed] = tone_2;
-		style.Colors[ImGuiCol_MenuBarBg] = tone_2;
-		style.Colors[ImGuiCol_ScrollbarBg] = tone_3;
-		style.Colors[ImGuiCol_ScrollbarGrab] = tone_1_e;
-		style.Colors[ImGuiCol_ScrollbarGrabHovered] = tone_1_e;
-		style.Colors[ImGuiCol_ScrollbarGrabActive] = tone_1_e_a;
-		style.Colors[ImGuiCol_CheckMark] = tone_1_e;
-		style.Colors[ImGuiCol_SliderGrab] = tone_1_e;
-		style.Colors[ImGuiCol_SliderGrabActive] = tone_1_e_a;
-		style.Colors[ImGuiCol_Button] = tone_2;
-		style.Colors[ImGuiCol_ButtonHovered] = tone_2;
-		style.Colors[ImGuiCol_ButtonActive] = tone_3;
-		style.Colors[ImGuiCol_Header] = tone_2;
-		style.Colors[ImGuiCol_HeaderHovered] = tone_2;
-		style.Colors[ImGuiCol_HeaderActive] = tone_2;
-		style.Colors[ImGuiCol_Separator] = tone_2;
-		style.Colors[ImGuiCol_SeparatorHovered] = tone_2;
-		style.Colors[ImGuiCol_SeparatorActive] = tone_2;
-		style.Colors[ImGuiCol_ResizeGrip] = {0.0, 0.0, 0.0, 0.0};
-		style.Colors[ImGuiCol_ResizeGripHovered] = {0.0, 0.0, 0.0, 0.0};
-		style.Colors[ImGuiCol_ResizeGripActive] = {0.0, 0.0, 0.0, 0.0};
-		style.Colors[ImGuiCol_Tab] = tone_2;
-		style.Colors[ImGuiCol_TabHovered] = tone_1;
-		style.Colors[ImGuiCol_TabActive] = tone_1;
-		style.Colors[ImGuiCol_TabUnfocused] = tone_1;
-		style.Colors[ImGuiCol_TabUnfocusedActive] = tone_1;
-		style.Colors[ImGuiCol_PlotLines] = tone_1_e;
-		style.Colors[ImGuiCol_PlotLinesHovered] = tone_2;
-		style.Colors[ImGuiCol_PlotHistogram] = tone_1_e;
-		style.Colors[ImGuiCol_PlotHistogramHovered] = tone_2;
-		style.Colors[ImGuiCol_TableHeaderBg] = tone_2;
-		style.Colors[ImGuiCol_TableBorderStrong] = tone_2;
-		style.Colors[ImGuiCol_TableBorderLight] = tone_2;
-		style.Colors[ImGuiCol_TableRowBg] = tone_2;
-		style.Colors[ImGuiCol_TableRowBgAlt] = tone_1;
-		style.Colors[ImGuiCol_TextSelectedBg] = tone_1_e;
-		style.Colors[ImGuiCol_DragDropTarget] = tone_2;
-		style.Colors[ImGuiCol_NavHighlight] = tone_2;
-		style.Colors[ImGuiCol_NavWindowingHighlight] = tone_2;
-		style.Colors[ImGuiCol_NavWindowingDimBg] = tone_2_b;
-		style.Colors[ImGuiCol_ModalWindowDimBg] = {tone_2_b.x * 0.5f, tone_2_b.y * 0.5f, tone_2_b.z * 0.5f, tone_2_b.w * 0.5f};
-
-		style.Colors[ImGuiCol_DockingPreview] = {1.0, 1.0, 1.0, 0.5};
-		style.Colors[ImGuiCol_DockingEmptyBg] = {0.0, 0.0, 0.0, 0.0};
-
-		style.WindowPadding = {10.00, 10.00};
-		style.FramePadding = {5.00, 5.00};
-		style.CellPadding = {2.50, 2.50};
-		style.ItemSpacing = {5.00, 5.00};
-		style.ItemInnerSpacing = {5.00, 5.00};
-		style.TouchExtraPadding = {5.00, 5.00};
-		style.IndentSpacing = 10;
-		style.ScrollbarSize = 15;
-		style.GrabMinSize = 10;
-		style.WindowBorderSize = 0;
-		style.ChildBorderSize = 0;
-		style.PopupBorderSize = 0;
-		style.FrameBorderSize = 0;
-		style.TabBorderSize = 0;
-		style.WindowRounding = 10;
-		style.ChildRounding = 5;
-		style.FrameRounding = 5;
-		style.PopupRounding = 5;
-		style.GrabRounding = 5;
-		style.ScrollbarRounding = 10;
-		style.LogSliderDeadzone = 5;
-		style.TabRounding = 5;
-		style.DockingSeparatorSize = 5;
+			if (S < 0.1f)
+			{
+				V = 1.0f - V;
+			}
+			ImGui::ColorConvertHSVtoRGB(H, S, V, col.x, col.y, col.z);
+			if (col.w < 1.00f)
+			{
+				col.w *= alpha_;
+			}
+		}
 	}
-
+	else
+	{
+		for (int i = 0; i <= ImGuiCol_COUNT; i++)
+		{
+			ImVec4& col = style.Colors[i];
+			if (col.w < 1.00f)
+			{
+				col.x *= alpha_;
+				col.y *= alpha_;
+				col.z *= alpha_;
+				col.w *= alpha_;
+			}
+		}
+	}
+#endif
+#undef IMGUI_STYLE
 
 	ImGui_ImplGlfw_InitForOther(m_window, true);
 	ImGui_ImplDX11_Init(GetDevice().Get(), GetDeviceContext().Get());

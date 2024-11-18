@@ -68,6 +68,8 @@ private:
 
 	void CreateSwapchain(GLFWwindow* window, u32 bufferCount);
 
+	void CreateGbuffer(uint width, uint height);
+
 	// @TODO: factor swapchain params?
 	void ResizeSwapchainResources(u32 width, u32 height);
 	void ObtainSwapchainResources();
@@ -110,11 +112,14 @@ private:
 	ComPtr<ID3D11DepthStencilState> m_depthStencilState;
 
 	struct GBufferData {
-		ComPtr<ID3D11Texture2D> positionTexture;
-		ComPtr<ID3D11RenderTargetView> positionRTV;
+		ComPtr<ID3D11Texture2D> albedoTexture;
+		ComPtr<ID3D11RenderTargetView> albedoRTV;
 
-		ComPtr<ID3D11Texture2D> normalTexture;
-		ComPtr<ID3D11RenderTargetView> normalRTV;
+		ComPtr<ID3D11Texture2D> wsPositionTexture;
+		ComPtr<ID3D11RenderTargetView> wsPositionRTV;
+
+		ComPtr<ID3D11Texture2D> wsNormalTexture;
+		ComPtr<ID3D11RenderTargetView> wsNormalRTV;
 	};
 
 	GBufferData m_gbufferData;

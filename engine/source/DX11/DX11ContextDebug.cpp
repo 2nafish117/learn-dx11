@@ -4095,6 +4095,8 @@ void DX11Context::LogDebugInfo()
 
 void DX11Context::ReportLiveDeviceObjects()
 {
+	// @TODO: this still only logs to vs log window
+	// is this even useful? https://stackoverflow.com/questions/18529077/where-does-reportlivedeviceobjects-report-to
 	if (auto res = m_debug->ReportLiveDeviceObjects(D3D11_RLDO_FLAGS::D3D11_RLDO_DETAIL); FAILED(res)) {
 		DXERROR(res);
 	}
