@@ -569,6 +569,20 @@ void AssetSystem::RegisterAssets()
 	}
 
 	{
+		ShaderID id = m_catalog->RegisterShaderAsset(ShaderAsset(ShaderAsset::Kind::Vertex, L"shaders/simple_deferred_vs.hlsl", "VSMain", "vs_5_0"));
+		global::rendererSystem->shaderCompiler->CompileShaderAsset(id);
+		ShaderAsset& asset = const_cast<ShaderAsset&>(m_catalog->GetShaderAsset(id));
+		asset.Load();
+	}
+
+	{
+		ShaderID id = m_catalog->RegisterShaderAsset(ShaderAsset(ShaderAsset::Kind::Pixel, L"shaders/simple_deferred_ps.hlsl", "PSMain", "ps_5_0"));
+		global::rendererSystem->shaderCompiler->CompileShaderAsset(id);
+		ShaderAsset& asset = const_cast<ShaderAsset&>(m_catalog->GetShaderAsset(id));
+		asset.Load();
+	}
+
+	{
 		TextureID id = m_catalog->RegisterTextureAsset(TextureAsset("textures/checker.png"));
 		TextureAsset& asset = const_cast<TextureAsset&>(m_catalog->GetTextureAsset(id));
 		asset.Load();

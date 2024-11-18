@@ -577,8 +577,15 @@ void DX11Context::Render(const RuntimeScene& scene)
 	// ImGui::End();
 
 	// begin render
+	// @TODO: can i just clear just before the first draw indexed?
 	const float clearColor[4] = {0.2f, 0.1f, 0.1f, 1.0f};
 	m_deviceContext->ClearRenderTargetView(m_renderTargetView.Get(), clearColor);
+
+	const float clearBlackColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	m_deviceContext->ClearRenderTargetView(m_gbufferData.albedoRTV.Get(), clearBlackColor);
+	m_deviceContext->ClearRenderTargetView(m_gbufferData.wsPositionRTV.Get(), clearBlackColor);
+	m_deviceContext->ClearRenderTargetView(m_gbufferData.wsNormalRTV.Get(), clearBlackColor);
+	
 	m_deviceContext->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
 	float time = static_cast<float>(glfwGetTime());
@@ -696,7 +703,7 @@ void DX11Context::Render(const RuntimeScene& scene)
 	m_deviceContext->PSSetConstantBuffers(0, 1, m_pointLightBuffer.GetAddressOf());
 	m_deviceContext->PSSetConstantBuffers(1, 1, m_matrixBuffer.GetAddressOf());
 
-	ID3D11RenderTargetView* renderTargets[] = { m_renderTargetView.Get() };
+	ID3D11RenderTargetView* renderTargets[] = { m_renderTargetView.Get(), m_gbufferData.albedoRTV.Get(), m_gbufferData.wsPositionRTV.Get() };
 
 	//@TODO: render ws_position, ws_normal, albedo, ...
 	m_deviceContext->OMSetRenderTargets(ARRLEN(renderTargets), renderTargets, m_depthStencilView.Get());

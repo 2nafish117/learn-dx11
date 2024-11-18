@@ -13,8 +13,8 @@ RuntimeScene::RuntimeScene()
 	staticMeshEntity0 = std::make_shared<StaticMeshEntity>();
 	staticMeshEntity0->xform.matrix = DirectX::XMMatrixIdentity();
 	staticMeshEntity0->meshAsset = {0};
-	staticMeshEntity0->vertShaderAsset = {0};
-	staticMeshEntity0->pixShaderAsset = {1};
+	staticMeshEntity0->vertShaderAsset = {2};
+	staticMeshEntity0->pixShaderAsset = {3};
 	staticMeshEntity0->texAsset = {0};
 
 	staticMeshEntity1 = std::make_shared<StaticMeshEntity>();
