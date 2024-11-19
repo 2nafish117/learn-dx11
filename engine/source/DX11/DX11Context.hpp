@@ -21,6 +21,8 @@
 #include "Math.hpp"
 #include "DX11ContextUtils.hpp"
 
+#include "AssetSystem.hpp"
+
 struct GLFWwindow;
 
 class DX11Mesh;
@@ -29,8 +31,6 @@ class DX11PixelShader;
 class ShaderCompiler;
 
 class RuntimeScene;
-
-
 
 class DX11Context {
 	template<typename T>
@@ -123,6 +123,10 @@ private:
 	};
 
 	GBufferData m_gbufferData;
+
+	// final pass quad mesh
+	// @TODO: hardcoding
+	MeshID m_quadMesh { 0 };
 
 	D3D11_VIEWPORT m_viewport = {};
 

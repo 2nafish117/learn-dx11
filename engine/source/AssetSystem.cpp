@@ -159,6 +159,7 @@ MeshAsset::MeshAsset(
 	const std::vector<float2>& uv0s,
 	const std::vector<float2>& uv1s,
 	const std::vector<u32>& indices)
+	// these are copies, cpp and its implicitness!!!!
 	: m_positions(positions), m_normals(normals), m_tangents(tangents), m_colors(colors), m_uv0s(uv0s), m_uv1s(uv1s), m_indices(indices)
 {
 
@@ -317,13 +318,17 @@ void* MeshAsset::GetRendererResource() const
 void MeshAsset::InitRendererResource()
 {
 	DX11Mesh::CreateInfo createInfo = {
-		.positions = m_positions,
-		.normals = m_normals,
-		.tangents = m_tangents,
-		.colors = m_colors,
-		.uv0s = m_uv0s,
-		.uv1s = m_uv1s,
-		.indices = m_indices,
+		.attributesCount = m_positions.size(),
+		
+		.positions = m_positions.data(),
+		.normals = m_normals.data(),
+		.tangents = m_tangents.data(),
+		.colors = m_colors.data(),
+		.uv0s = m_uv0s.data(),
+		.uv1s = m_uv1s.data(),
+		
+		.indicesCount = m_indices.size(),
+		.indices = m_indices.data(),
 	};
 	m_rendererResource = new DX11Mesh(global::rendererSystem->GetDevice(), createInfo);
 }
@@ -496,6 +501,36 @@ void ShaderAsset::InitRendererResource()
 
 void AssetSystem::RegisterAssets()
 {
+	// engine meshes, used by engine systems like the renderer
+	{
+		std::vector<float3> m_quadMeshPositions = {
+			float3(-0.5f, -0.5f, 0.5f),
+			float3(0.5f, 0.5f, 0.5f),
+			float3(0.5f, -0.5f, 0.5f),
+			float3(-0.5f, 0.5f, 0.5f)
+		};
+		std::vector<float2> m_quadMeshUv0s = {
+			float2(0.0f, 1.0f),
+			float2(1.0f, 0.0f),
+			float2(1.0f, 1.0f),
+			float2(0.0f, 0.0f),
+		};
+		std::vector<u32> m_quadMeshIndices = {
+			0, 1, 2,
+			0, 3, 1
+		};
+
+		MeshID id = m_catalog->RegisterMeshAsset(MeshAsset(
+			m_quadMeshPositions,
+			{}, {}, {}, 
+			m_quadMeshUv0s,
+			{}, 
+			m_quadMeshIndices
+		));
+		MeshAsset& asset = const_cast<MeshAsset&>(m_catalog->GetMeshAsset(id));
+		asset.Load();
+	}
+
 	// @TODO: currently we dont unload anything, there needs to be a system that decides on scene transition, 
 	// or something more dynamic that loads and unloads resources from disk
 	{
@@ -515,44 +550,6 @@ void AssetSystem::RegisterAssets()
 		MeshAsset& asset = const_cast<MeshAsset&>(m_catalog->GetMeshAsset(id));
 		asset.Load();
 	}
-
-
-	// @TODO: register a quad
-	// std::vector<StaticMesh::Vertex> vertices = {
-	// 	StaticMesh::Vertex{ float3(-0.5f, -0.5f, 0.5f), float3(0.0f, 0.0f, -1.0f), float3(0.0f, 0.5f, 0.0f), float2(0.0f, 1.0f) },
-	// 	StaticMesh::Vertex{ float3(0.5f, 0.5f, 0.5f),   float3(0.0f, 0.0f, -1.0f), float3(0.0f, 0.0f, 0.5f), float2(1.0f, 0.0f) },
-	// 	StaticMesh::Vertex{ float3(0.5f, -0.5f, 0.5f),  float3(0.0f, 0.0f, -1.0f), float3(0.0f, 0.0f, 0.5f), float2(1.0f, 1.0f) },
-	// 	StaticMesh::Vertex{ float3(-0.5f, 0.5f, 0.5f),  float3(0.0f, 0.0f, -1.0f), float3(0.5f, 0.0f, 0.0f), float2(0.0f, 0.0f) },
-	// };
-
-	//std::vector<float3> positions = {
-	//	float3(-0.5f, -0.5f, 0.5f), float3(0.5f, 0.5f, 0.5f), float3(0.5f, -0.5f, 0.5f), float3(-0.5f, 0.5f, 0.5f)
-	//};
-	//std::vector<float3> normals = {
-	//	float3(0.0f, 0.0f, -1.0f),
-	//	float3(0.0f, 0.0f, -1.0f),
-	//	float3(0.0f, 0.0f, -1.0f),
-	//	float3(0.0f, 0.0f, -1.0f),
-	//};
-	//std::vector<float3> tangents;
-	//std::vector<float3> colors = {
-	//	float3(0.0f, 0.5f, 0.0f),
-	//	float3(0.0f, 0.0f, 0.5f),
-	//	float3(0.0f, 0.0f, 0.5f),
-	//	float3(0.5f, 0.0f, 0.0f),
-	//};
-	//std::vector<float2> uv0s = {
-	//	float2(0.0f, 1.0f),
-	//	float2(1.0f, 0.0f),
-	//	float2(1.0f, 1.0f),
-	//	float2(0.0f, 0.0f),
-	//};
-	//std::vector<float2> uv1s;
-
-	//std::vector<u32> indices = {
-	//	0, 1, 2,
-	//	0, 3, 1
-	//};
 
 	{
 		ShaderID id = m_catalog->RegisterShaderAsset(ShaderAsset(ShaderAsset::Kind::Vertex, L"shaders/simple_vs.hlsl", "VSMain", "vs_5_0"));

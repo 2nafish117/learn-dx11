@@ -316,6 +316,8 @@ void DX11Context::CreateGbuffer(uint width, uint height)
 	if (auto res = m_device->CreateRenderTargetView(m_gbufferData.wsNormalTexture.Get(), &normalRTVDesc, &m_gbufferData.wsNormalRTV); FAILED(res)) {
 		DXERROR(res);
 	}
+
+
 }
 
 DX11Context::~DX11Context()
@@ -618,7 +620,7 @@ void DX11Context::Render(const RuntimeScene& scene)
 	plBuffer->Col = DirectX::XMFLOAT3(1.0, 1.0, 1.0);
 	m_deviceContext->Unmap(m_pointLightBuffer.Get(), 0);
 
-
+	// @TODO: move this to DX11Mesh?
 	D3D11_INPUT_ELEMENT_DESC inputElementDescs[] = {
 		{
 			.SemanticName = "POSITION",
@@ -709,6 +711,14 @@ void DX11Context::Render(const RuntimeScene& scene)
 	m_deviceContext->OMSetRenderTargets(ARRLEN(renderTargets), renderTargets, m_depthStencilView.Get());
 
 	m_deviceContext->DrawIndexed(rendererMesh->GetIndexCount(), 0, 0);
+
+	// @TODO: final pass
+	
+	//const MeshAsset& quadMesh = global::assetSystem->Catalog()->GetMeshAsset(m_quadMesh);
+	//DX11Mesh* rendererQuadMesh = (DX11Mesh*) quadMesh.GetRendererResource();
+	//m_deviceContext->DrawIndexed(rendererQuadMesh->GetIndexCount(), 0, 0);
+
+	// end final pass
 
 #ifdef DX11_DEBUG
 	// log errors from our code

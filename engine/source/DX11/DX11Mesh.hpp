@@ -21,24 +21,22 @@ public:
 		float2 uv0;
 	};
 
-	// @TODO: this class should interleave the vertex attributes and give it as a singe vertex ?
-	class VertexGenerator {
-	public:
-	private:
-	};
-
 	using VertexType = Vertex;
 
 	struct CreateInfo {
-		// @TODO: remove usage of vector here
-		std::vector<float3>& positions;
-		std::vector<float3>& normals;
-		std::vector<float3>& tangents;
-		std::vector<float3>& colors;
-		std::vector<float2>& uv0s;
-		std::vector<float2>& uv1s;
+		// number of elements in each of the attibute arrays
+		size_t attributesCount = 0;
 
-		std::vector<u32>& indices;
+		// attribute arrays
+		float3* positions = nullptr;
+		float3* normals = nullptr;
+		float3* tangents = nullptr;
+		float3* colors = nullptr;
+		float2* uv0s = nullptr;
+		float2* uv1s = nullptr;
+
+		size_t indicesCount = 0;
+		u32* indices = nullptr;
 	};
 
 	DX11Mesh(ComPtr<ID3D11Device> device, const CreateInfo& info) 
