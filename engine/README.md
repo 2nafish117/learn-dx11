@@ -7,6 +7,7 @@
 5. skybox rendering
 7. Input system, input events
 8. allocators / std memory resource stuff?
+9. integrate renderdoc api
 10. entities
 11. PBR
 12. screen space AO

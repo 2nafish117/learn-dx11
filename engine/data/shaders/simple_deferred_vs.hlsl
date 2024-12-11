@@ -15,8 +15,10 @@ struct VSOutput {
 
 cbuffer MatrixBuffer : register(b0)
 {
+	// @TODO: rename to objToWorld
     float4x4 modelToWorld;
     float4x4 worldToView;
+	// @TODO: rename to viewToClip
     float4x4 viewToProjection;
 };
 
@@ -24,16 +26,19 @@ VSOutput VSMain(VSInput vsInput) {
 	VSOutput vsOutput;
 
 	// @TODO: can i just set w to 1?
+	// @TODO: put this in a func? or macro?
 	vsInput.obj_position.w = 1;
 	vsOutput.cs_position = vsInput.obj_position;
 	vsOutput.cs_position = mul(vsOutput.cs_position, modelToWorld);
 	vsOutput.cs_position = mul(vsOutput.cs_position, worldToView);
 	vsOutput.cs_position = mul(vsOutput.cs_position, viewToProjection);
 
+	// @TODO: func or macro
 	float4 ws_pos = vsInput.obj_position;
 	ws_pos = mul(ws_pos, modelToWorld);
 	vsOutput.ws_position = ws_pos.xyz;
 
+	// @TODO: func or macro
 	vsOutput.ws_normal = vsInput.obj_normal;
 	// @TODO: use normal scaling if scaling non uniformly
 	// see https://learnopengl.com/Lighting/Basic-Lighting

@@ -503,36 +503,42 @@ void AssetSystem::RegisterAssets()
 {
 	// engine meshes, used by engine systems like the renderer
 	{
-		std::vector<float3> m_quadMeshPositions = {
-			float3(-0.5f, -0.5f, 0.5f),
-			float3(0.5f, 0.5f, 0.5f),
-			float3(0.5f, -0.5f, 0.5f),
-			float3(-0.5f, 0.5f, 0.5f)
-		};
-		std::vector<float2> m_quadMeshUv0s = {
-			float2(0.0f, 1.0f),
-			float2(1.0f, 0.0f),
-			float2(1.0f, 1.0f),
-			float2(0.0f, 0.0f),
-		};
-		std::vector<u32> m_quadMeshIndices = {
-			0, 1, 2,
-			0, 3, 1
-		};
+		// std::vector<float3> m_quadMeshPositions = {
+		// 	float3(-0.5f, -0.5f, 0.5f),
+		// 	float3(0.5f, 0.5f, 0.5f),
+		// 	float3(0.5f, -0.5f, 0.5f),
+		// 	float3(-0.5f, 0.5f, 0.5f)
+		// };
+		// std::vector<float2> m_quadMeshUv0s = {
+		// 	float2(0.0f, 1.0f),
+		// 	float2(1.0f, 0.0f),
+		// 	float2(1.0f, 1.0f),
+		// 	float2(0.0f, 0.0f),
+		// };
+		// std::vector<u32> m_quadMeshIndices = {
+		// 	0, 1, 2,
+		// 	0, 3, 1
+		// };
 
-		MeshID id = m_catalog->RegisterMeshAsset(MeshAsset(
-			m_quadMeshPositions,
-			{}, {}, {}, 
-			m_quadMeshUv0s,
-			{}, 
-			m_quadMeshIndices
-		));
-		MeshAsset& asset = const_cast<MeshAsset&>(m_catalog->GetMeshAsset(id));
-		asset.Load();
+		// MeshID id = m_catalog->RegisterMeshAsset(MeshAsset(
+		// 	m_quadMeshPositions,
+		// 	{}, {}, {}, 
+		// 	m_quadMeshUv0s,
+		// 	{}, 
+		// 	m_quadMeshIndices
+		// ));
+		// MeshAsset& asset = const_cast<MeshAsset&>(m_catalog->GetMeshAsset(id));
+		// asset.Load();
 	}
 
 	// @TODO: currently we dont unload anything, there needs to be a system that decides on scene transition, 
 	// or something more dynamic that loads and unloads resources from disk
+	{
+		MeshID id = m_catalog->RegisterMeshAsset(MeshAsset("meshes/quad.glb"));
+		MeshAsset& asset = const_cast<MeshAsset&>(m_catalog->GetMeshAsset(id));
+		asset.Load();
+	}
+
 	{
 		MeshID id = m_catalog->RegisterMeshAsset(MeshAsset("meshes/suzanne.glb"));
 		MeshAsset& asset = const_cast<MeshAsset&>(m_catalog->GetMeshAsset(id));
@@ -552,6 +558,7 @@ void AssetSystem::RegisterAssets()
 	}
 
 	{
+		// 0
 		ShaderID id = m_catalog->RegisterShaderAsset(ShaderAsset(ShaderAsset::Kind::Vertex, L"shaders/simple_vs.hlsl", "VSMain", "vs_5_0"));
 		global::rendererSystem->shaderCompiler->CompileShaderAsset(id);
 		ShaderAsset& asset = const_cast<ShaderAsset&>(m_catalog->GetShaderAsset(id));
@@ -559,6 +566,7 @@ void AssetSystem::RegisterAssets()
 	}
 
 	{
+		// 1
 		ShaderID id = m_catalog->RegisterShaderAsset(ShaderAsset(ShaderAsset::Kind::Pixel, L"shaders/simple_ps.hlsl", "PSMain", "ps_5_0"));
 		global::rendererSystem->shaderCompiler->CompileShaderAsset(id);
 		ShaderAsset& asset = const_cast<ShaderAsset&>(m_catalog->GetShaderAsset(id));
@@ -566,6 +574,7 @@ void AssetSystem::RegisterAssets()
 	}
 
 	{
+		// 2
 		ShaderID id = m_catalog->RegisterShaderAsset(ShaderAsset(ShaderAsset::Kind::Vertex, L"shaders/simple_deferred_vs.hlsl", "VSMain", "vs_5_0"));
 		global::rendererSystem->shaderCompiler->CompileShaderAsset(id);
 		ShaderAsset& asset = const_cast<ShaderAsset&>(m_catalog->GetShaderAsset(id));
@@ -573,7 +582,24 @@ void AssetSystem::RegisterAssets()
 	}
 
 	{
+		// 3
 		ShaderID id = m_catalog->RegisterShaderAsset(ShaderAsset(ShaderAsset::Kind::Pixel, L"shaders/simple_deferred_ps.hlsl", "PSMain", "ps_5_0"));
+		global::rendererSystem->shaderCompiler->CompileShaderAsset(id);
+		ShaderAsset& asset = const_cast<ShaderAsset&>(m_catalog->GetShaderAsset(id));
+		asset.Load();
+	}
+
+	{
+		// 4
+		ShaderID id = m_catalog->RegisterShaderAsset(ShaderAsset(ShaderAsset::Kind::Vertex, L"shaders/final_deferred_pass_vs.hlsl", "VSMain", "vs_5_0"));
+		global::rendererSystem->shaderCompiler->CompileShaderAsset(id);
+		ShaderAsset& asset = const_cast<ShaderAsset&>(m_catalog->GetShaderAsset(id));
+		asset.Load();
+	}
+
+	{
+		// 5
+		ShaderID id = m_catalog->RegisterShaderAsset(ShaderAsset(ShaderAsset::Kind::Pixel, L"shaders/final_deferred_pass_ps.hlsl", "PSMain", "ps_5_0"));
 		global::rendererSystem->shaderCompiler->CompileShaderAsset(id);
 		ShaderAsset& asset = const_cast<ShaderAsset&>(m_catalog->GetShaderAsset(id));
 		asset.Load();

@@ -2,19 +2,17 @@
 
 struct PSInput {
 	float4 cs_position: SV_POSITION;
-	float3 ws_position: POSITION;
-	float3 ws_normal: NORMAL;
-	float3 color: COLOR;
 	float2 uv0: TEXCOORD0;
 };
 
 struct PSOutput {
-	float4 albedo: SV_TARGET0;
-	float4 ws_position: SV_TARGET1;
-	float4 ws_normal: SV_TARGET2;
+	float4 combined: SV_TARGET0;
 };
 
-uniform Texture2D tex;
+uniform Texture2D albedoTex: register(t0);
+// uniform Texture2D ws_positionTex: register(t1);
+// uniform Texture2D ws_normalTex: register(t2);
+
 sampler texSampler;
 
 cbuffer PointLightBuffer: register(b0)
@@ -60,9 +58,9 @@ PSOutput PSMain(PSInput psInput)
 {
 	PSOutput psOutput;
 
-	float4 albedo = tex.Sample(texSampler, psInput.uv0);
-	float3 ws_position = psInput.ws_position;
-	float3 ws_normal = psInput.ws_normal;
+	float4 albedo = albedoTex.Sample(texSampler, psInput.uv0);
+	// float3 ws_position = ws_positionTex.Sample(texSampler, psInput.uv0).rgb;
+	// float3 ws_normal = ws_normalTex.Sample(texSampler, psInput.uv0).rgb;
 	
 #if 0
 	float3 wsCamPos = float3(-worldToView[3][0], -worldToView[3][1], -worldToView[3][2]);
@@ -71,10 +69,7 @@ PSOutput PSMain(PSInput psInput)
 	float4 pixelColor = albedo * float4(brdf, 1.0);
 #endif
 
-	psOutput.albedo = albedo;
-	const float xxunused = 1;
-	psOutput.ws_position = float4(ws_position, xxunused);
-	psOutput.ws_normal = float4(ws_normal, xxunused);
+	psOutput.combined = albedo;
 
 	return psOutput;
 }

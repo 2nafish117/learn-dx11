@@ -114,17 +114,17 @@ public:
 
 	const MeshAsset& GetMeshAsset(MeshID id) const 
 	{
-		ENSURE(id.value >= 0 && id.value < m_meshAssets.size());
+		ENSURE(id.value >= 0 && id.value < m_meshAssets.size(), "");
 		return m_meshAssets[id.value];
 	}
 	const ShaderAsset& GetShaderAsset(ShaderID id) const 
 	{
-		ENSURE(id.value >= 0 && id.value < m_shaderAssets.size());
+		ENSURE(id.value >= 0 && id.value < m_shaderAssets.size(), "");
 		return m_shaderAssets[id.value];
 	}
 	const TextureAsset& GetTextureAsset(TextureID id) const 
 	{
-		ENSURE(id.value >= 0 && id.value < m_textureAssets.size());
+		ENSURE(id.value >= 0 && id.value < m_textureAssets.size(), "");
 		return m_textureAssets[id.value];
 	}
 

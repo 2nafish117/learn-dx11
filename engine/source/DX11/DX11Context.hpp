@@ -109,24 +109,30 @@ private:
 
 	// pipeline states
 	ComPtr<ID3D11RasterizerState> m_rasterState;
+	ComPtr<ID3D11RasterizerState> m_rasterState2;
 	ComPtr<ID3D11DepthStencilState> m_depthStencilState;
 
 	struct GBufferData {
 		ComPtr<ID3D11Texture2D> albedoTexture;
 		ComPtr<ID3D11RenderTargetView> albedoRTV;
+		ComPtr<ID3D11ShaderResourceView> albedoSRV;
 
 		ComPtr<ID3D11Texture2D> wsPositionTexture;
 		ComPtr<ID3D11RenderTargetView> wsPositionRTV;
+		ComPtr<ID3D11ShaderResourceView> wsPositionSRV;
 
 		ComPtr<ID3D11Texture2D> wsNormalTexture;
 		ComPtr<ID3D11RenderTargetView> wsNormalRTV;
+		ComPtr<ID3D11ShaderResourceView> wsNormalSRV;
 	};
 
 	GBufferData m_gbufferData;
 
 	// final pass quad mesh
-	// @TODO: hardcoding
+	// @TODO: hardcoding asset ids
 	MeshID m_quadMesh { 0 };
+	ShaderID m_finalPassVertexShader { 4 };
+	ShaderID m_finalPassPixelShader { 5 };
 
 	D3D11_VIEWPORT m_viewport = {};
 

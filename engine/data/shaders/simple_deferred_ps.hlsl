@@ -14,14 +14,15 @@ struct PSOutput {
 	float4 ws_normal: SV_TARGET2;
 };
 
-uniform Texture2D tex;
+uniform Texture2D albedoTex;
+
 sampler texSampler;
 
 PSOutput PSMain(PSInput psInput)
 {
 	PSOutput psOutput;
 
-	float4 albedo = tex.Sample(texSampler, psInput.uv0);
+	float4 albedo = albedoTex.Sample(texSampler, psInput.uv0);
 	float3 ws_position = psInput.ws_position;
 	float3 ws_normal = psInput.ws_normal;
 

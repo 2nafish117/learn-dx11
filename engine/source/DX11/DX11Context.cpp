@@ -173,6 +173,24 @@ DX11Context::DX11Context(GLFWwindow* window)
 
 	m_deviceContext->RSSetState(m_rasterState.Get());
 
+	D3D11_RASTERIZER_DESC rasterDesc2 = {
+		.FillMode = D3D11_FILL_SOLID,
+		.CullMode = D3D11_CULL_BACK,
+		.FrontCounterClockwise = false,
+		.DepthBias = 0,
+		.DepthBiasClamp = 0.0f,
+		.SlopeScaledDepthBias = 0.0f,
+		.DepthClipEnable = false,
+		.ScissorEnable = false,
+		.MultisampleEnable = false,
+		.AntialiasedLineEnable = false,
+	};
+
+	// Create the rasterizer state from the description we just filled out.
+	if (auto res = m_device->CreateRasterizerState(&rasterDesc2, &m_rasterState2); FAILED(res)) {
+		spdlog::critical("create rasterizer state failed with: {}", res);
+	}
+
 	m_viewport = {
 		.TopLeftX = 0.0f,
 		.TopLeftY = 0.0f,
@@ -219,7 +237,59 @@ DX11Context::DX11Context(GLFWwindow* window)
 
 void DX11Context::CreateGbuffer(uint width, uint height)
 {
-	D3D11_TEXTURE2D_DESC albedoDesc = {
+	// @TODO: optimise to use 16 bit float textures for normal, and albedo
+	//albedo stuff
+	{
+		D3D11_TEXTURE2D_DESC albedoDesc = {
+				.Width = width,
+				.Height = height,
+				.MipLevels = 1,
+				.ArraySize = 1,
+				.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT,
+				.SampleDesc = {
+					.Count = 1,
+					.Quality = 0,
+				},
+				.Usage = D3D11_USAGE::D3D11_USAGE_DEFAULT,
+				.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
+				.CPUAccessFlags = 0,
+				.MiscFlags = 0,
+		};
+
+		// @TODO: DXERROR will not print if an api call crashes sometimes, do the DXCALL macro stuff i guess?
+		if (auto res = m_device->CreateTexture2D(&albedoDesc, nullptr, &m_gbufferData.albedoTexture); FAILED(res)) {
+			DXERROR(res);
+		}
+
+		D3D11_RENDER_TARGET_VIEW_DESC albedoRTVDesc = {
+			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT,
+			.ViewDimension = D3D11_RTV_DIMENSION::D3D11_RTV_DIMENSION_TEXTURE2D,
+			.Texture2D = {
+				.MipSlice = 0,
+			},
+		};
+
+		if (auto res = m_device->CreateRenderTargetView(m_gbufferData.albedoTexture.Get(), &albedoRTVDesc, &m_gbufferData.albedoRTV); FAILED(res)) {
+			DXERROR(res);
+		}
+
+		D3D11_SHADER_RESOURCE_VIEW_DESC albedoSRVDesc = {
+			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT,
+			.ViewDimension = D3D11_SRV_DIMENSION::D3D11_SRV_DIMENSION_TEXTURE2D,
+			.Texture2D = {
+				.MostDetailedMip = 0,
+				.MipLevels = static_cast<UINT>(-1),
+			},
+		};
+
+		if (auto res = m_device->CreateShaderResourceView(m_gbufferData.albedoTexture.Get(), &albedoSRVDesc, &m_gbufferData.albedoSRV); FAILED(res)) {
+			DXERROR(res);
+		}
+	}
+
+	// position stuff
+	{
+		D3D11_TEXTURE2D_DESC positionDesc = {
 			.Width = width,
 			.Height = height,
 			.MipLevels = 1,
@@ -230,94 +300,89 @@ void DX11Context::CreateGbuffer(uint width, uint height)
 				.Quality = 0,
 			},
 			.Usage = D3D11_USAGE::D3D11_USAGE_DEFAULT,
-			.BindFlags = D3D11_BIND_RENDER_TARGET,
+			.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
 			.CPUAccessFlags = 0,
 			.MiscFlags = 0,
-	};
+		};
 
-	// @TODO: DXERROR will not print if an api call crashes sometimes, do the DXCALL macro stuff i guess?
-	if (auto res = m_device->CreateTexture2D(&albedoDesc, nullptr, &m_gbufferData.albedoTexture); FAILED(res)) {
-		DXERROR(res);
+		// @TODO: DXERROR will not print if an api call crashes sometimes, do the DXCALL macro stuff i guess?
+		if (auto res = m_device->CreateTexture2D(&positionDesc, nullptr, &m_gbufferData.wsPositionTexture); FAILED(res)) {
+			DXERROR(res);
+		}
+
+		D3D11_RENDER_TARGET_VIEW_DESC positionRTVDesc = {
+			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT,
+			.ViewDimension = D3D11_RTV_DIMENSION::D3D11_RTV_DIMENSION_TEXTURE2D,
+			.Texture2D = {
+				.MipSlice = 0,
+			},
+		};
+
+		if (auto res = m_device->CreateRenderTargetView(m_gbufferData.wsPositionTexture.Get(), &positionRTVDesc, &m_gbufferData.wsPositionRTV); FAILED(res)) {
+			DXERROR(res);
+		}
+
+		D3D11_SHADER_RESOURCE_VIEW_DESC positionSRVDesc = {
+			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT,
+			.ViewDimension = D3D11_SRV_DIMENSION::D3D11_SRV_DIMENSION_TEXTURE2D,
+			.Texture2D = {
+				.MostDetailedMip = 0,
+				.MipLevels = static_cast<UINT>(-1),
+			},
+		};
+
+		if (auto res = m_device->CreateShaderResourceView(m_gbufferData.wsPositionTexture.Get(), &positionSRVDesc, &m_gbufferData.wsPositionSRV); FAILED(res)) {
+			DXERROR(res);
+		}
 	}
 
-	D3D11_RENDER_TARGET_VIEW_DESC albedoRTVDesc = {
-		.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT,
-		.ViewDimension = D3D11_RTV_DIMENSION::D3D11_RTV_DIMENSION_TEXTURE2D,
-		.Texture2D = {
-			.MipSlice = 0,
-		},
-	};
+	// normal stuff
+	{		
+		D3D11_TEXTURE2D_DESC normalDesc = {
+			.Width = width,
+			.Height = height,
+			.MipLevels = 1,
+			.ArraySize = 1,
+			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT,
+			.SampleDesc = {
+				.Count = 1,
+				.Quality = 0,
+			},
+			.Usage = D3D11_USAGE::D3D11_USAGE_DEFAULT,
+			.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
+			.CPUAccessFlags = 0,
+			.MiscFlags = 0,
+		};
 
-	if (auto res = m_device->CreateRenderTargetView(m_gbufferData.albedoTexture.Get(), &albedoRTVDesc, &m_gbufferData.albedoRTV); FAILED(res)) {
-		DXERROR(res);
+		if (auto res = m_device->CreateTexture2D(&normalDesc, nullptr, &m_gbufferData.wsNormalTexture); FAILED(res)) {
+			DXERROR(res);
+		}
+
+		D3D11_RENDER_TARGET_VIEW_DESC normalRTVDesc = {
+			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT,
+			.ViewDimension = D3D11_RTV_DIMENSION::D3D11_RTV_DIMENSION_TEXTURE2D,
+			.Texture2D = {
+				.MipSlice = 0
+			},
+		};
+
+		if (auto res = m_device->CreateRenderTargetView(m_gbufferData.wsNormalTexture.Get(), &normalRTVDesc, &m_gbufferData.wsNormalRTV); FAILED(res)) {
+			DXERROR(res);
+		}
+
+		D3D11_SHADER_RESOURCE_VIEW_DESC normalSRVDesc = {
+			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT,
+			.ViewDimension = D3D11_SRV_DIMENSION::D3D11_SRV_DIMENSION_TEXTURE2D,
+			.Texture2D = {
+				.MostDetailedMip = 0,
+				.MipLevels = static_cast<UINT>(-1),
+			},
+		};
+
+		if (auto res = m_device->CreateShaderResourceView(m_gbufferData.wsNormalTexture.Get(), &normalSRVDesc, &m_gbufferData.wsNormalSRV); FAILED(res)) {
+			DXERROR(res);
+		}
 	}
-
-	D3D11_TEXTURE2D_DESC positionDesc = {
-		.Width = width,
-		.Height = height,
-		.MipLevels = 1,
-		.ArraySize = 1,
-		.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT,
-		.SampleDesc = {
-			.Count = 1,
-			.Quality = 0,
-		},
-		.Usage = D3D11_USAGE::D3D11_USAGE_DEFAULT,
-		.BindFlags = D3D11_BIND_RENDER_TARGET,
-		.CPUAccessFlags = 0,
-		.MiscFlags = 0,
-	};
-
-	// @TODO: DXERROR will not print if an api call crashes sometimes, do the DXCALL macro stuff i guess?
-	if (auto res = m_device->CreateTexture2D(&positionDesc, nullptr, &m_gbufferData.wsPositionTexture); FAILED(res)) {
-		DXERROR(res);
-	}
-
-	D3D11_RENDER_TARGET_VIEW_DESC positionRTVDesc = {
-		.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT,
-		.ViewDimension = D3D11_RTV_DIMENSION::D3D11_RTV_DIMENSION_TEXTURE2D,
-		.Texture2D = {
-			.MipSlice = 0,
-		},
-	};
-
-	if (auto res = m_device->CreateRenderTargetView(m_gbufferData.wsPositionTexture.Get(), &positionRTVDesc, &m_gbufferData.wsPositionRTV); FAILED(res)) {
-		DXERROR(res);
-	}
-
-	D3D11_TEXTURE2D_DESC normalDesc = {
-		.Width = width,
-		.Height = height,
-		.MipLevels = 1,
-		.ArraySize = 1,
-		.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT,
-		.SampleDesc = {
-			.Count = 1,
-			.Quality = 0,
-		},
-		.Usage = D3D11_USAGE::D3D11_USAGE_DEFAULT,
-		.BindFlags = D3D11_BIND_RENDER_TARGET,
-		.CPUAccessFlags = 0,
-		.MiscFlags = 0,
-	};
-
-	if (auto res = m_device->CreateTexture2D(&normalDesc, nullptr, &m_gbufferData.wsNormalTexture); FAILED(res)) {
-		DXERROR(res);
-	}
-
-	D3D11_RENDER_TARGET_VIEW_DESC normalRTVDesc = {
-		.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT,
-		.ViewDimension = D3D11_RTV_DIMENSION::D3D11_RTV_DIMENSION_TEXTURE2D,
-		.Texture2D = {
-			.MipSlice = 0
-		},
-	};
-
-	if (auto res = m_device->CreateRenderTargetView(m_gbufferData.wsNormalTexture.Get(), &normalRTVDesc, &m_gbufferData.wsNormalRTV); FAILED(res)) {
-		DXERROR(res);
-	}
-
-
 }
 
 DX11Context::~DX11Context()
@@ -705,20 +770,95 @@ void DX11Context::Render(const RuntimeScene& scene)
 	m_deviceContext->PSSetConstantBuffers(0, 1, m_pointLightBuffer.GetAddressOf());
 	m_deviceContext->PSSetConstantBuffers(1, 1, m_matrixBuffer.GetAddressOf());
 
-	ID3D11RenderTargetView* renderTargets[] = { m_renderTargetView.Get(), m_gbufferData.albedoRTV.Get(), m_gbufferData.wsPositionRTV.Get() };
+	ID3D11RenderTargetView* renderTargets[] = { m_gbufferData.albedoRTV.Get(), m_gbufferData.wsPositionRTV.Get(), m_gbufferData.wsNormalRTV.Get() };
 
 	//@TODO: render ws_position, ws_normal, albedo, ...
 	m_deviceContext->OMSetRenderTargets(ARRLEN(renderTargets), renderTargets, m_depthStencilView.Get());
-
+	m_deviceContext->RSSetState(m_rasterState.Get());
 	m_deviceContext->DrawIndexed(rendererMesh->GetIndexCount(), 0, 0);
 
-	// @TODO: final pass
+	// final pass
 	
-	//const MeshAsset& quadMesh = global::assetSystem->Catalog()->GetMeshAsset(m_quadMesh);
-	//DX11Mesh* rendererQuadMesh = (DX11Mesh*) quadMesh.GetRendererResource();
-	//m_deviceContext->DrawIndexed(rendererQuadMesh->GetIndexCount(), 0, 0);
+	// // @TODO: move this to DX11Mesh?
+	D3D11_INPUT_ELEMENT_DESC finalPassInputElementDescs[] = {
+		{
+			.SemanticName = "POSITION",
+			.SemanticIndex = 0,
+			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT,
+			.InputSlot = 0,
+			.AlignedByteOffset = 0,
+			.InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
+			.InstanceDataStepRate = 0,
+		},
+		{
+			.SemanticName = "TEXCOORD",
+			.SemanticIndex = 0,
+			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32_FLOAT,
+			.InputSlot = 0,
+			.AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT,
+			.InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
+			.InstanceDataStepRate = 0,
+		}
+	};
 
-	// end final pass
+	 const ShaderAsset& vertShaderAssetFinalPass = global::assetSystem->Catalog()->GetShaderAsset(m_finalPassVertexShader);
+	 DX11VertexShader* vertShaderFinalPass = (DX11VertexShader*) vertShaderAssetFinalPass.GetRendererResource();
+	 const ShaderAsset& pixShaderAssetFinalPass = global::assetSystem->Catalog()->GetShaderAsset(m_finalPassPixelShader);
+	 DX11PixelShader* pixShaderFinalPass = (DX11PixelShader*) pixShaderAssetFinalPass.GetRendererResource();
+
+	ComPtr<ID3D11InputLayout> m_finalPassinputLayout;
+	if (auto res = m_device->CreateInputLayout(
+		finalPassInputElementDescs, 
+		ARRAYSIZE(finalPassInputElementDescs), 
+		vertShaderAssetFinalPass.blob,
+		vertShaderAssetFinalPass.blobSize,
+		&m_finalPassinputLayout); FAILED(res)) 
+	{
+		DXERROR(res);
+	}
+
+	m_deviceContext->IASetInputLayout(m_finalPassinputLayout.Get());
+
+	const MeshAsset& quadMesh = global::assetSystem->Catalog()->GetMeshAsset(m_quadMesh);
+	DX11Mesh* rendererQuadMesh = (DX11Mesh*) quadMesh.GetRendererResource();
+
+	// @TODO: do i have to add null to the end like this to unbind prev render targets in those slots??
+	ID3D11RenderTargetView* renderTargetsFinal[] = { m_renderTargetView.Get(), nullptr, nullptr };
+
+	m_deviceContext->OMSetRenderTargets(ARRLEN(renderTargetsFinal), renderTargetsFinal, m_depthStencilView.Get());
+
+	m_deviceContext->IASetVertexBuffers(
+		0, 
+		rendererQuadMesh->GetVertexBufferCount(),
+		rendererQuadMesh->GetVertexBuffer().GetAddressOf(),
+		rendererQuadMesh->GetVertexBufferStrides().data(),
+		rendererQuadMesh->GetVertexBufferOffsets().data());
+
+	m_deviceContext->IASetIndexBuffer(rendererQuadMesh->GetIndexBuffer().Get(), rendererQuadMesh->GetIndexBufferFormat(), 0);
+
+	m_deviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	
+	m_deviceContext->VSSetShader(vertShaderFinalPass->Get(), nullptr, 0);
+	// m_deviceContext->VSSetConstantBuffers(0, 1, m_matrixBuffer.GetAddressOf());
+
+	m_deviceContext->PSSetShader(pixShaderFinalPass->Get(), nullptr, 0);
+	
+	m_deviceContext->PSSetShaderResources(0, 1, m_gbufferData.albedoSRV.GetAddressOf());
+	//m_deviceContext->PSSetShaderResources(1, 1, m_gbufferData.wsPositionSRV.GetAddressOf());
+	//m_deviceContext->PSSetShaderResources(2, 1, m_gbufferData.wsNormalSRV.GetAddressOf());
+
+	m_deviceContext->PSSetSamplers(0, 1, texture->GetSamplerState().GetAddressOf());
+
+	m_deviceContext->PSSetConstantBuffers(0, 1, m_pointLightBuffer.GetAddressOf());
+	m_deviceContext->PSSetConstantBuffers(1, 1, m_matrixBuffer.GetAddressOf());
+
+	// disable depth clip
+	m_deviceContext->RSSetState(m_rasterState2.Get());
+
+	// @TODO: final quad isnt being drawn!!!!
+	m_deviceContext->DrawIndexed(rendererQuadMesh->GetIndexCount(), 0, 0);
+
+	// // end final pass
 
 #ifdef DX11_DEBUG
 	// log errors from our code
@@ -810,7 +950,7 @@ void DX11Context::InitImgui() {
 
 	ImGuiStyle& style = ImGui::GetStyle();
 
-	// light style from Pacôme Danhiez (user itamago) https://github.com/ocornut/imgui/pull/511#issuecomment-175719267
+	// light style from Pacï¿½me Danhiez (user itamago) https://github.com/ocornut/imgui/pull/511#issuecomment-175719267
 	style.Alpha = 1.0f;
 	style.FrameRounding = 3.0f;
 	style.Colors[ImGuiCol_Text] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
