@@ -618,8 +618,8 @@ void DX11Context::Render(const RuntimeScene& scene)
 	m_deviceContext->PSSetShader(pixShaderFinalPass->Get(), nullptr, 0);
 
 	m_deviceContext->PSSetShaderResources(0, 1, m_gbufferData.albedoSRV.GetAddressOf());
-	//m_deviceContext->PSSetShaderResources(1, 1, m_gbufferData.wsPositionSRV.GetAddressOf());
-	//m_deviceContext->PSSetShaderResources(2, 1, m_gbufferData.wsNormalSRV.GetAddressOf());
+	m_deviceContext->PSSetShaderResources(1, 1, m_gbufferData.wsPositionSRV.GetAddressOf());
+	m_deviceContext->PSSetShaderResources(2, 1, m_gbufferData.wsNormalSRV.GetAddressOf());
 
 	m_deviceContext->PSSetSamplers(0, 1, texture->GetSamplerState().GetAddressOf());
 

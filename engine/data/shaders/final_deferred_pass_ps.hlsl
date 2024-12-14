@@ -10,8 +10,8 @@ struct PSOutput {
 };
 
 uniform Texture2D albedoTex: register(t0);
-// uniform Texture2D ws_positionTex: register(t1);
-// uniform Texture2D ws_normalTex: register(t2);
+uniform Texture2D ws_positionTex: register(t1);
+uniform Texture2D ws_normalTex: register(t2);
 
 uniform sampler texSampler;
 
@@ -59,17 +59,17 @@ PSOutput PSMain(PSInput psInput)
 	PSOutput psOutput;
 
 	float4 albedo = albedoTex.Sample(texSampler, psInput.uv0);
-	// float3 ws_position = ws_positionTex.Sample(texSampler, psInput.uv0).rgb;
-	// float3 ws_normal = ws_normalTex.Sample(texSampler, psInput.uv0).rgb;
+	float3 ws_position = ws_positionTex.Sample(texSampler, psInput.uv0).rgb;
+	float3 ws_normal = ws_normalTex.Sample(texSampler, psInput.uv0).rgb;
 	
-// #if 0
-// 	float3 wsCamPos = float3(-worldToView[3][0], -worldToView[3][1], -worldToView[3][2]);
-// 	float3 brdf = PhongBRDF(Pos, wsCamPos, psInput.ws_position, psInput.ws_normal);
+#if 1
+	float3 wsCamPos = float3(-worldToView[3][0], -worldToView[3][1], -worldToView[3][2]);
+	float3 brdf = PhongBRDF(Pos, wsCamPos, ws_position, ws_normal);
 
-// 	float4 pixelColor = albedo * float4(brdf, 1.0);
-// #endif
+	float4 pixelColor = albedo * float4(brdf, 1.0);
+#endif
 
-	psOutput.combined = albedo;
+	psOutput.combined = pixelColor;
 
 	return psOutput;
 }
