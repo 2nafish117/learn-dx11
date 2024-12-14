@@ -152,13 +152,13 @@ MeshAsset::MeshAsset(std::string_view filePath)
 
 // @TODO: should this be allowed?
 MeshAsset::MeshAsset(
-	const std::vector<float3>& positions,
-	const std::vector<float3>& normals, 
-	const std::vector<float3>& tangents,
-	const std::vector<float3>& colors,
-	const std::vector<float2>& uv0s,
-	const std::vector<float2>& uv1s,
-	const std::vector<u32>& indices)
+	const std::vector<float3>&& positions,
+	const std::vector<float3>&& normals, 
+	const std::vector<float3>&& tangents,
+	const std::vector<float3>&& colors,
+	const std::vector<float2>&& uv0s,
+	const std::vector<float2>&& uv1s,
+	const std::vector<u32>&& indices)
 	// these are copies, cpp and its implicitness!!!!
 	: m_positions(positions), m_normals(normals), m_tangents(tangents), m_colors(colors), m_uv0s(uv0s), m_uv1s(uv1s), m_indices(indices)
 {
@@ -167,129 +167,133 @@ MeshAsset::MeshAsset(
 
 void MeshAsset::Load()
 {
-	std::string realPath = global::assetSystem->GetRealPath(m_filePath);
-	// @TODO: temprary, gltf loader should make meshes and stuff instead, only processing should happen here? or is that file a custom mesh format?
-	spdlog::info("loading mesh {}", realPath);
-
-	// @TODO: customise options
-	cgltf_options options = {};
-	cgltf_data* data = nullptr;
-	cgltf_result result = cgltf_parse_file(&options, realPath.data(), &data);
-
-	if (result != cgltf_result_success) {
-		spdlog::error("failed loading mesh {}", realPath);
-		return;
-	}
-
-	spdlog::info("loaded mesh {}", realPath);
-
-	spdlog::info("{}", data->json);
-	GltfPrintInfo(data);
-
-	if(cgltf_load_buffers(&options, data, realPath.data()) != cgltf_result_success) {
-		spdlog::error("failed loading mesh buffers {}", realPath);
-		return;
-	}
-
-	spdlog::info("loaded mesh buffers {}", realPath);
-
-	ENSURE(data->meshes_count > 0, "");
-	cgltf_mesh* mesh = &data->meshes[0];
-
-	ENSURE(mesh->primitives_count > 0, "");
-	cgltf_primitive* primitive = &mesh->primitives[0];
-
-	// get indices
+	// if we dont have a file path then we set the verted data ourselves
+	if (!m_filePath.empty()) 
 	{
-		cgltf_size count = cgltf_accessor_unpack_indices(primitive->indices, nullptr, sizeof(u32), 0);
-		m_indices.resize(count);
-		count = cgltf_accessor_unpack_indices(primitive->indices, m_indices.data(), sizeof(u32), m_indices.size());
-	}
+		std::string realPath = global::assetSystem->GetRealPath(m_filePath);
+		// @TODO: temprary, gltf loader should make meshes and stuff instead, only processing should happen here? or is that file a custom mesh format?
+		spdlog::info("loading mesh {}", realPath);
 
-	for(int a = 0; a < mesh->primitives->attributes_count; ++a) {
-		cgltf_attribute* attribute = &mesh->primitives->attributes[a];
-		cgltf_buffer_view* buffer_view = attribute->data->buffer_view;
+		// @TODO: customise options
+		cgltf_options options = {};
+		cgltf_data* data = nullptr;
+		cgltf_result result = cgltf_parse_file(&options, realPath.data(), &data);
 
-		ENSURE(buffer_view->type == cgltf_buffer_view_type_vertices, "");
+		if (result != cgltf_result_success) {
+			spdlog::error("failed loading mesh {}", realPath);
+			return;
+		}
 
-		switch(attribute->type) {
-		case cgltf_attribute_type_position: {
-			// cgltf_size count = cgltf_accessor_unpack_floats(attribute->data, nullptr, 0);
-			m_positions.resize(attribute->data->count);
-			(void)cgltf_accessor_unpack_floats(attribute->data, reinterpret_cast<cgltf_float*>(m_positions.data()), 3 * m_positions.size());
-		} break;
-		case cgltf_attribute_type_normal: {
-			// cgltf_size count = cgltf_accessor_unpack_floats(attribute->data, nullptr, 0);
-			m_normals.resize(attribute->data->count);
-			(void)cgltf_accessor_unpack_floats(attribute->data, reinterpret_cast<cgltf_float*>(m_normals.data()), 3 * m_normals.size());
-		} break;
-		case cgltf_attribute_type_tangent: {
-			// cgltf_size count = cgltf_accessor_unpack_floats(attribute->data, nullptr, 0);
-			m_tangents.resize(attribute->data->count);
-			(void)cgltf_accessor_unpack_floats(attribute->data, reinterpret_cast<cgltf_float*>(m_tangents.data()), 3 * m_tangents.size());
-		} break;
-		case cgltf_attribute_type_texcoord: {
-			if(attribute->index == 0) {
+		spdlog::info("loaded mesh {}", realPath);
+
+		spdlog::info("{}", data->json);
+		GltfPrintInfo(data);
+
+		if(cgltf_load_buffers(&options, data, realPath.data()) != cgltf_result_success) {
+			spdlog::error("failed loading mesh buffers {}", realPath);
+			return;
+		}
+
+		spdlog::info("loaded mesh buffers {}", realPath);
+
+		ENSURE(data->meshes_count > 0, "");
+		cgltf_mesh* mesh = &data->meshes[0];
+
+		ENSURE(mesh->primitives_count > 0, "");
+		cgltf_primitive* primitive = &mesh->primitives[0];
+
+		// get indices
+		{
+			cgltf_size count = cgltf_accessor_unpack_indices(primitive->indices, nullptr, sizeof(u32), 0);
+			m_indices.resize(count);
+			count = cgltf_accessor_unpack_indices(primitive->indices, m_indices.data(), sizeof(u32), m_indices.size());
+		}
+
+		for(int a = 0; a < mesh->primitives->attributes_count; ++a) {
+			cgltf_attribute* attribute = &mesh->primitives->attributes[a];
+			cgltf_buffer_view* buffer_view = attribute->data->buffer_view;
+
+			ENSURE(buffer_view->type == cgltf_buffer_view_type_vertices, "");
+
+			switch(attribute->type) {
+			case cgltf_attribute_type_position: {
 				// cgltf_size count = cgltf_accessor_unpack_floats(attribute->data, nullptr, 0);
-				m_uv0s.resize(attribute->data->count);
-				(void)cgltf_accessor_unpack_floats(attribute->data, reinterpret_cast<cgltf_float*>(m_uv0s.data()), 2 * m_uv0s.size());
-			}
-
-			if(attribute->index == 1) {
+				m_positions.resize(attribute->data->count);
+				(void)cgltf_accessor_unpack_floats(attribute->data, reinterpret_cast<cgltf_float*>(m_positions.data()), 3 * m_positions.size());
+			} break;
+			case cgltf_attribute_type_normal: {
 				// cgltf_size count = cgltf_accessor_unpack_floats(attribute->data, nullptr, 0);
-				m_uv1s.resize(attribute->data->count);
-				(void)cgltf_accessor_unpack_floats(attribute->data, reinterpret_cast<cgltf_float*>(m_uv1s.data()), 2 * m_uv1s.size());
-			}
-		} break;
-		case cgltf_attribute_type_color: {
-			// cgltf_size count = cgltf_accessor_unpack_floats(attribute->data, nullptr, 0);
-			m_colors.resize(attribute->data->count);
-			(void)cgltf_accessor_unpack_floats(attribute->data, reinterpret_cast<cgltf_float*>(m_colors.data()), 3 * m_colors.size());
-		} break;
-		case cgltf_attribute_type_joints: {
+				m_normals.resize(attribute->data->count);
+				(void)cgltf_accessor_unpack_floats(attribute->data, reinterpret_cast<cgltf_float*>(m_normals.data()), 3 * m_normals.size());
+			} break;
+			case cgltf_attribute_type_tangent: {
+				// cgltf_size count = cgltf_accessor_unpack_floats(attribute->data, nullptr, 0);
+				m_tangents.resize(attribute->data->count);
+				(void)cgltf_accessor_unpack_floats(attribute->data, reinterpret_cast<cgltf_float*>(m_tangents.data()), 3 * m_tangents.size());
+			} break;
+			case cgltf_attribute_type_texcoord: {
+				if(attribute->index == 0) {
+					// cgltf_size count = cgltf_accessor_unpack_floats(attribute->data, nullptr, 0);
+					m_uv0s.resize(attribute->data->count);
+					(void)cgltf_accessor_unpack_floats(attribute->data, reinterpret_cast<cgltf_float*>(m_uv0s.data()), 2 * m_uv0s.size());
+				}
 
-		} break;
-		case cgltf_attribute_type_weights: {
+				if(attribute->index == 1) {
+					// cgltf_size count = cgltf_accessor_unpack_floats(attribute->data, nullptr, 0);
+					m_uv1s.resize(attribute->data->count);
+					(void)cgltf_accessor_unpack_floats(attribute->data, reinterpret_cast<cgltf_float*>(m_uv1s.data()), 2 * m_uv1s.size());
+				}
+			} break;
+			case cgltf_attribute_type_color: {
+				// cgltf_size count = cgltf_accessor_unpack_floats(attribute->data, nullptr, 0);
+				m_colors.resize(attribute->data->count);
+				(void)cgltf_accessor_unpack_floats(attribute->data, reinterpret_cast<cgltf_float*>(m_colors.data()), 3 * m_colors.size());
+			} break;
+			case cgltf_attribute_type_joints: {
 
-		} break;
-		case cgltf_attribute_type_custom: {
+			} break;
+			case cgltf_attribute_type_weights: {
 
-		} break;
-		case cgltf_attribute_type_invalid: 
-		case cgltf_attribute_type_max_enum: {
-			UNREACHABLE("");
-		} break;
-		};
+			} break;
+			case cgltf_attribute_type_custom: {
+
+			} break;
+			case cgltf_attribute_type_invalid: 
+			case cgltf_attribute_type_max_enum: {
+				UNREACHABLE("");
+			} break;
+			};
+		}
+
+		// @TODO: this below is a hack, do better
+
+		// ensure normals exist
+		if(m_positions.size() != m_normals.size()) {
+			m_normals.resize(m_positions.size());
+			// @TODO: calculate normals
+		}
+
+		// ensure colors exist
+		if(m_positions.size() != m_colors.size()) {
+			m_colors.resize(m_positions.size());
+			memset(m_colors.data(), 0, m_colors.size() * sizeof(float3));
+		}
+
+		// ensure uv0s exist
+		if(m_positions.size() != m_uv0s.size()) {
+			m_uv0s.resize(m_positions.size());
+			memset(m_uv0s.data(), 0, m_uv0s.size() * sizeof(float2));
+		}
+
+		ENSURE(m_positions.size() == m_normals.size(), "");
+		// ENSURE(m_positions.size() == m_tangents.size(), "");
+		ENSURE(m_positions.size() == m_colors.size(), "");
+		ENSURE(m_positions.size() == m_uv0s.size(), "");
+		// ENSURE(m_positions.size() == m_uv1s.size(), "");
+
+		cgltf_free(data);
+		spdlog::info("processed mesh {}", realPath);
 	}
-
-	// @TODO: this below is a hack, do better
-
-	// ensure normals exist
-	if(m_positions.size() != m_normals.size()) {
-		m_normals.resize(m_positions.size());
-		// @TODO: calculate normals
-	}
-
-	// ensure colors exist
-	if(m_positions.size() != m_colors.size()) {
-		m_colors.resize(m_positions.size());
-		memset(m_colors.data(), 0, m_colors.size() * sizeof(float3));
-	}
-
-	// ensure uv0s exist
-	if(m_positions.size() != m_uv0s.size()) {
-		m_uv0s.resize(m_positions.size());
-		memset(m_uv0s.data(), 0, m_uv0s.size() * sizeof(float2));
-	}
-
-	ENSURE(m_positions.size() == m_normals.size(), "");
-	// ENSURE(m_positions.size() == m_tangents.size(), "");
-	ENSURE(m_positions.size() == m_colors.size(), "");
-	ENSURE(m_positions.size() == m_uv0s.size(), "");
-	// ENSURE(m_positions.size() == m_uv1s.size(), "");
-
-	cgltf_free(data);
-	spdlog::info("processed mesh {}", realPath);
 
 	state = AssetState::Loaded;
 
@@ -338,7 +342,7 @@ void MeshAsset::InitRendererResource()
 void MeshAsset::GltfPrintInfo(cgltf_data* data) {
 	for(int s = 0;s < data->scenes_count; ++s) {
 		cgltf_scene scene = data->scenes[s];
-		spdlog::info("[scene name={} nodes_count={}]", scene.name, scene.nodes_count);
+		spdlog::info("[scene name={} nodes_count={}]", SPDLOG_PTR(scene.name), scene.nodes_count);
 	}
 	
 	GltfPrintMeshInfo(data);
@@ -351,7 +355,7 @@ void MeshAsset::GltfPrintInfo(cgltf_data* data) {
 
 	for(int a = 0; a < data->accessors_count; ++a) {
 		cgltf_accessor accessor = data->accessors[a];
-		spdlog::info("[accessor name={} comp_type={} is_sparse={}]", accessor.name, cgltf_component_type_strings[accessor.component_type], accessor.is_sparse);
+		spdlog::info("[accessor name={} comp_type={} is_sparse={}]", SPDLOG_PTR(accessor.name), SPDLOG_PTR(cgltf_component_type_strings[accessor.component_type]), accessor.is_sparse);
 	}
 }
 
@@ -359,10 +363,10 @@ void MeshAsset::GltfPrintInfo(cgltf_data* data) {
 void MeshAsset::GltfPrintAnimationInfo(cgltf_data* data) {
 	for(int a = 0; a < data->animations_count; ++a) {
 		cgltf_animation animation = data->animations[a];
-		spdlog::info("[animation name={}]", animation.name);
+		spdlog::info("[animation name={}]", SPDLOG_PTR(animation.name));
 
 		for(int c = 0; c < animation.channels_count; ++c) {
-			spdlog::info("[channel path_type={}]", cgltf_animation_path_type_strings[animation.channels[c].target_path]);
+			spdlog::info("[channel path_type={}]", SPDLOG_PTR(cgltf_animation_path_type_strings[animation.channels[c].target_path]));
 		}
 	}
 }
@@ -371,14 +375,14 @@ void MeshAsset::GltfPrintMaterialInfo(cgltf_data* data) {
 	for(int m = 0;m < data->materials_count; ++m) {
 		cgltf_material material = data->materials[m];
 
-		spdlog::info("[material name={}]", material.name);
+		spdlog::info("[material name={}]", SPDLOG_PTR(material.name));
 	}
 }
 
 void MeshAsset::GltfPrintImageInfo(cgltf_data* data) {
 	for(int i = 0;i < data->images_count; ++i) {
 		cgltf_image image = data->images[i];
-		spdlog::info("[image name={} uri={} mime_type={}]", image.name, image.uri, image.mime_type);
+		spdlog::info("[image name={} uri={} mime_type={}]", SPDLOG_PTR(image.name), SPDLOG_PTR(image.uri), SPDLOG_PTR(image.mime_type));
 	}	
 }
 
@@ -386,18 +390,18 @@ void MeshAsset::GltfPrintMeshInfo(cgltf_data* data) {
 
 	for(int m = 0;m < data->meshes_count; ++m) {
 		cgltf_mesh mesh = data->meshes[m];
-		spdlog::info("[mesh name={}]", mesh.name);
+		spdlog::info("[mesh name={}]", SPDLOG_PTR(mesh.name));
 		
 		for(int p = 0;p < mesh.primitives_count; ++p) {
 			cgltf_primitive primitive = mesh.primitives[p];
-			spdlog::info("[primitive type={}]", cgltf_primitive_type_strings[primitive.type]);
+			spdlog::info("[primitive type={}]", SPDLOG_PTR(cgltf_primitive_type_strings[primitive.type]));
 
 			for(int a = 0; a < primitive.attributes_count; ++a) {
-				cgltf_attribute attribute = primitive.attributes[a];			
-				spdlog::info("[attribute name={} index={} type={}]", attribute.name, attribute.index, cgltf_attribute_type_strings[attribute.type]);
+				cgltf_attribute attribute = primitive.attributes[a];
+				spdlog::info("[attribute name={} index={} type={}]", SPDLOG_PTR(attribute.name), attribute.index, SPDLOG_PTR(cgltf_attribute_type_strings[attribute.type]));
 			}
 
-			spdlog::info("[indices name={} type={}]", primitive.indices->name, cgltf_component_type_strings[primitive.indices->component_type]);
+			spdlog::info("[indices name={} type={}]", SPDLOG_PTR(primitive.indices->name), SPDLOG_PTR(cgltf_component_type_strings[primitive.indices->component_type]));
 		}
 
 		for(int w = 0;w < mesh.weights_count; ++w) {
@@ -407,12 +411,12 @@ void MeshAsset::GltfPrintMeshInfo(cgltf_data* data) {
 
 		for(int tn = 0; tn < mesh.target_names_count; ++tn) {
 			const char* tname = mesh.target_names[tn];
-			spdlog::info("[target name={}]", tname);
+			spdlog::info("[target name={}]", SPDLOG_PTR(tname));
 		}
 
 		for(int e = 0;e < mesh.extensions_count; ++e) {
 			cgltf_extension extension = mesh.extensions[e];
-			spdlog::info("[extension name={}]", extension.name);
+			spdlog::info("[extension name={}]", SPDLOG_PTR(extension.name));
 		}
 	}
 }
@@ -503,40 +507,43 @@ void AssetSystem::RegisterAssets()
 {
 	// engine meshes, used by engine systems like the renderer
 	{
-		// std::vector<float3> m_quadMeshPositions = {
-		// 	float3(-0.5f, -0.5f, 0.5f),
-		// 	float3(0.5f, 0.5f, 0.5f),
-		// 	float3(0.5f, -0.5f, 0.5f),
-		// 	float3(-0.5f, 0.5f, 0.5f)
-		// };
-		// std::vector<float2> m_quadMeshUv0s = {
-		// 	float2(0.0f, 1.0f),
-		// 	float2(1.0f, 0.0f),
-		// 	float2(1.0f, 1.0f),
-		// 	float2(0.0f, 0.0f),
-		// };
-		// std::vector<u32> m_quadMeshIndices = {
-		// 	0, 1, 2,
-		// 	0, 3, 1
-		// };
+		std::vector<float3> m_quadMeshPositions = {
+			float3(-1.0f, -1.0f, 0.0f),
+			float3(1.0f, 1.0f, 0.0f),
+			float3(1.0f, -1.0f, 0.0f),
+			float3(-1.0f, 1.0f, 0.0f)
+		};
+		std::vector<float2> m_quadMeshUv0s = {
+			float2(0.0f, 1.0f),
+			float2(1.0f, 0.0f),
+			float2(1.0f, 1.0f),
+			float2(0.0f, 0.0f),
+		};
+		std::vector<u32> m_quadMeshIndices = {
+			0, 1, 2,
+			0, 3, 1
+		};
 
-		// MeshID id = m_catalog->RegisterMeshAsset(MeshAsset(
-		// 	m_quadMeshPositions,
-		// 	{}, {}, {}, 
-		// 	m_quadMeshUv0s,
-		// 	{}, 
-		// 	m_quadMeshIndices
-		// ));
-		// MeshAsset& asset = const_cast<MeshAsset&>(m_catalog->GetMeshAsset(id));
-		// asset.Load();
+		MeshID id = m_catalog->RegisterMeshAsset(MeshAsset(
+			std::move(m_quadMeshPositions),
+			{/* normal */}, 
+			{/* tangent */}, 
+			{/* color */}, 
+			std::move(m_quadMeshUv0s),
+			{/* uv1 */}, 
+			std::move(m_quadMeshIndices)
+		));
+		MeshAsset& asset = const_cast<MeshAsset&>(m_catalog->GetMeshAsset(id));
+		asset.Load();
 	}
 
+	// @TODO: upload thr render resources of the assets after the renderer is initialised
 	// @TODO: currently we dont unload anything, there needs to be a system that decides on scene transition, 
 	// or something more dynamic that loads and unloads resources from disk
 	{
-		MeshID id = m_catalog->RegisterMeshAsset(MeshAsset("meshes/quad.glb"));
-		MeshAsset& asset = const_cast<MeshAsset&>(m_catalog->GetMeshAsset(id));
-		asset.Load();
+		// MeshID id = m_catalog->RegisterMeshAsset(MeshAsset("meshes/quad.glb"));
+		// MeshAsset& asset = const_cast<MeshAsset&>(m_catalog->GetMeshAsset(id));
+		// asset.Load();
 	}
 
 	{

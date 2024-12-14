@@ -76,3 +76,6 @@ using unique_defer = std::unique_ptr<void, std::function<void(void*)>>;
 // 	);
 // 	spdlog::info("Hello x={}", x);
 // }
+
+// workaround to print nullptr with spdlog
+#define SPDLOG_PTR(str) ((str) ? (str) : "nullptr")

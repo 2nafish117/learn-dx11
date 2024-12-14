@@ -6,11 +6,11 @@ void DX11Mesh::Create(ComPtr<ID3D11Device> device, const CreateInfo& info)
 	vertices.reserve(info.attributesCount);
 
 	for (int i = 0; i < info.attributesCount; ++i) {
-		vertices.emplace_back(
+		vertices.push_back(
 			VertexType{
 				.position = info.positions[i],
-				.normal = info.normals[i],
-				.color = info.colors[i],
+				.normal = info.normals ? info.normals[i] : float3{},
+				.color = info.colors ? info.colors[i] : float3{},
 				.uv0 = info.uv0s[i],
 			}
 		);

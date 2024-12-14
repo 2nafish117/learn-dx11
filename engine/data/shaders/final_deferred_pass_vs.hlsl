@@ -1,5 +1,7 @@
 struct VSInput {
 	float4 cs_position: POSITION;
+	float3 obj_normal: NORMAL;
+	float3 color: COLOR;
 	float2 uv0: TEXCOORD0;
 };
 

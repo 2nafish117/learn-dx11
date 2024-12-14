@@ -136,8 +136,6 @@ DX11Context::DX11Context(GLFWwindow* window)
 
 	spdlog::info("created depth stencil state");
 
-	m_deviceContext->OMSetDepthStencilState(m_depthStencilState.Get(), 0);
-
 	D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc = {
 		.Format = DXGI_FORMAT_D24_UNORM_S8_UINT,
 		.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D,
@@ -150,8 +148,6 @@ DX11Context::DX11Context(GLFWwindow* window)
 	if(auto res = m_device->CreateDepthStencilView(m_depthStencilTexture.Get(), &depthStencilViewDesc, &m_depthStencilView); FAILED(res)) {
 		spdlog::critical("depth stencil view creation failed with {}", res);
 	}
-
-	m_deviceContext->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), m_depthStencilView.Get());
 
 	D3D11_RASTERIZER_DESC rasterDesc = {
 		.FillMode = D3D11_FILL_SOLID,
@@ -170,8 +166,6 @@ DX11Context::DX11Context(GLFWwindow* window)
 	if(auto res = m_device->CreateRasterizerState(&rasterDesc, &m_rasterState); FAILED(res)) {
 		spdlog::critical("create rasterizer state failed with: {}", res);
 	}
-
-	m_deviceContext->RSSetState(m_rasterState.Get());
 
 	D3D11_RASTERIZER_DESC rasterDesc2 = {
 		.FillMode = D3D11_FILL_SOLID,
@@ -199,8 +193,6 @@ DX11Context::DX11Context(GLFWwindow* window)
 		.MinDepth = 0.0f,
 		.MaxDepth = 1.0f,
 	};
-
-	m_deviceContext->RSSetViewports(1, &m_viewport);
 
 	shaderCompiler = std::make_unique<ShaderCompiler>(new ShaderIncluder());
 
@@ -400,6 +392,278 @@ DX11Context::~DX11Context()
 	ImGui_ImplDX11_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
+}
+
+void DX11Context::Render(const RuntimeScene& scene)
+{
+	ImGui_ImplDX11_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
+	ImGui::NewFrame();
+
+	ImGui::ShowDemoWindow();
+	// ImGui::Begin("the name", nullptr, ImGuiWindowFlags_DockNodeHost);
+
+	// ImGui::End();
+
+	// begin render
+
+	m_deviceContext->ClearState();
+
+	m_deviceContext->RSSetViewports(1, &m_viewport);
+	m_deviceContext->RSSetState(m_rasterState.Get());
+	m_deviceContext->OMSetDepthStencilState(m_depthStencilState.Get(), 0);
+
+
+	// @TODO: can i just clear just before the first draw indexed?
+	const float clearColor[4] = { 0.2f, 0.1f, 0.1f, 1.0f };
+	m_deviceContext->ClearRenderTargetView(m_renderTargetView.Get(), clearColor);
+
+
+
+	const float clearBlackColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	m_deviceContext->ClearRenderTargetView(m_gbufferData.albedoRTV.Get(), clearBlackColor);
+	m_deviceContext->ClearRenderTargetView(m_gbufferData.wsPositionRTV.Get(), clearBlackColor);
+	m_deviceContext->ClearRenderTargetView(m_gbufferData.wsNormalRTV.Get(), clearBlackColor);
+
+	m_deviceContext->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+	float time = static_cast<float>(glfwGetTime());
+	float angle = DirectX::XMScalarSin(time);
+	float moveX = 0.5f * DirectX::XMScalarSin(time * 2.0f);
+	float moveY = 0.5f * DirectX::XMScalarSin(time * 2.0f);
+	auto rotMatrix = DirectX::XMMatrixRotationY(angle + DirectX::XM_PI);
+
+	auto transMatrix = DirectX::XMMatrixTranslation(moveX, moveY, 0);
+
+	DirectX::XMMATRIX modelToWorld = scene.staticMeshEntity0->xform.matrix;
+	modelToWorld = modelToWorld * rotMatrix;
+	modelToWorld = modelToWorld * transMatrix;
+
+	mat4 worldToCam = scene.camera->GetView();
+	mat4 CamToProjection = scene.camera->GetProjection();
+
+	D3D11_MAPPED_SUBRESOURCE subresource;
+	m_deviceContext->Map(m_matrixBuffer.Get(), 0, D3D11_MAP::D3D11_MAP_WRITE_DISCARD, 0, &subresource);
+	MatrixBuffer* data = reinterpret_cast<MatrixBuffer*>(subresource.pData);
+	data->ModelToWorld = DirectX::XMMatrixTranspose(modelToWorld);
+	data->WorldToView = DirectX::XMMatrixTranspose(worldToCam);
+	data->ViewToProjection = DirectX::XMMatrixTranspose(CamToProjection);
+	m_deviceContext->Unmap(m_matrixBuffer.Get(), 0);
+
+	D3D11_MAPPED_SUBRESOURCE pointSubresource;
+	m_deviceContext->Map(m_pointLightBuffer.Get(), 0, D3D11_MAP::D3D11_MAP_WRITE_DISCARD, 0, &pointSubresource);
+	PointLightBuffer* plBuffer = reinterpret_cast<PointLightBuffer*>(pointSubresource.pData);
+	plBuffer->Pos = DirectX::XMFLOAT3(1.0, 1.0f, -3);
+	plBuffer->Col = DirectX::XMFLOAT3(1.0, 1.0, 1.0);
+	m_deviceContext->Unmap(m_pointLightBuffer.Get(), 0);
+
+	// @TODO: move this to DX11Mesh?
+	D3D11_INPUT_ELEMENT_DESC inputElementDescs[] = {
+		{
+			.SemanticName = "POSITION",
+			.SemanticIndex = 0,
+			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT,
+			.InputSlot = 0,
+			.AlignedByteOffset = 0,
+			.InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
+			.InstanceDataStepRate = 0,
+		},
+		{
+			.SemanticName = "NORMAL",
+			.SemanticIndex = 0,
+			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT,
+			.InputSlot = 0,
+			.AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT,
+			.InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
+			.InstanceDataStepRate = 0,
+		},
+		{
+			.SemanticName = "COLOR",
+			.SemanticIndex = 0,
+			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT,
+			.InputSlot = 0,
+			.AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT,
+			.InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
+			.InstanceDataStepRate = 0,
+		},
+		{
+			.SemanticName = "TEXCOORD",
+			.SemanticIndex = 0,
+			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32_FLOAT,
+			.InputSlot = 0,
+			.AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT,
+			.InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
+			.InstanceDataStepRate = 0,
+		}
+	};
+
+	const ShaderAsset& vertShaderAssetSimple = global::assetSystem->Catalog()->GetShaderAsset(scene.staticMeshEntity0->vertShaderAsset);
+	DX11VertexShader* vertShaderSimple = (DX11VertexShader*)vertShaderAssetSimple.GetRendererResource();
+	const ShaderAsset& pixShaderAssetSimple = global::assetSystem->Catalog()->GetShaderAsset(scene.staticMeshEntity0->pixShaderAsset);
+	DX11PixelShader* pixShaderSimple = (DX11PixelShader*)pixShaderAssetSimple.GetRendererResource();
+
+	ComPtr<ID3D11InputLayout> m_inputLayout;
+	if (auto res = m_device->CreateInputLayout(
+		inputElementDescs,
+		ARRAYSIZE(inputElementDescs),
+		vertShaderAssetSimple.blob,
+		vertShaderAssetSimple.blobSize,
+		&m_inputLayout); FAILED(res))
+	{
+		DXERROR(res);
+	}
+
+	m_deviceContext->IASetInputLayout(m_inputLayout.Get());
+
+	const MeshAsset& meshAsset0 = global::assetSystem->Catalog()->GetMeshAsset(scene.staticMeshEntity0->meshAsset);
+	DX11Mesh* rendererMesh = (DX11Mesh*)meshAsset0.GetRendererResource();
+
+	const TextureAsset& texAsset = global::assetSystem->Catalog()->GetTextureAsset(scene.staticMeshEntity0->texAsset);
+	DX11Texture* texture = (DX11Texture*)texAsset.GetRendererResource();
+
+	// draw mesh 1
+	m_deviceContext->IASetVertexBuffers(
+		0,
+		rendererMesh->GetVertexBufferCount(),
+		rendererMesh->GetVertexBuffer().GetAddressOf(),
+		rendererMesh->GetVertexBufferStrides().data(),
+		rendererMesh->GetVertexBufferOffsets().data());
+
+	m_deviceContext->IASetIndexBuffer(rendererMesh->GetIndexBuffer().Get(), rendererMesh->GetIndexBufferFormat(), 0);
+
+	m_deviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	m_deviceContext->VSSetShader(vertShaderSimple->Get(), nullptr, 0);
+	m_deviceContext->VSSetConstantBuffers(0, 1, m_matrixBuffer.GetAddressOf());
+
+	m_deviceContext->PSSetShader(pixShaderSimple->Get(), nullptr, 0);
+	m_deviceContext->PSSetShaderResources(0, 1, texture->GetSRV().GetAddressOf());
+	m_deviceContext->PSSetSamplers(0, 1, texture->GetSamplerState().GetAddressOf());
+	m_deviceContext->PSSetConstantBuffers(0, 1, m_pointLightBuffer.GetAddressOf());
+	m_deviceContext->PSSetConstantBuffers(1, 1, m_matrixBuffer.GetAddressOf());
+
+	ID3D11RenderTargetView* renderTargets[] = { m_gbufferData.albedoRTV.Get(), m_gbufferData.wsPositionRTV.Get(), m_gbufferData.wsNormalRTV.Get() };
+
+	//@TODO: render ws_position, ws_normal, albedo, ...
+	m_deviceContext->OMSetRenderTargets(ARRLEN(renderTargets), renderTargets, m_depthStencilView.Get());
+	m_deviceContext->RSSetState(m_rasterState.Get());
+	m_deviceContext->DrawIndexed(rendererMesh->GetIndexCount(), 0, 0);
+
+	// final pass
+
+	// // @TODO: move this to DX11Mesh?
+	//D3D11_INPUT_ELEMENT_DESC finalPassInputElementDescs[] = {
+	//	{
+	//		.SemanticName = "POSITION",
+	//		.SemanticIndex = 0,
+	//		.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT,
+	//		.InputSlot = 0,
+	//		.AlignedByteOffset = 0,
+	//		.InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
+	//		.InstanceDataStepRate = 0,
+	//	},
+	//	{
+	//		.SemanticName = "TEXCOORD",
+	//		.SemanticIndex = 0,
+	//		.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32_FLOAT,
+	//		.InputSlot = 0,
+	//		.AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT,
+	//		.InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
+	//		.InstanceDataStepRate = 0,
+	//	}
+	//};
+
+
+	const ShaderAsset& vertShaderAssetFinalPass = global::assetSystem->Catalog()->GetShaderAsset(m_finalPassVertexShader);
+	DX11VertexShader* vertShaderFinalPass = (DX11VertexShader*)vertShaderAssetFinalPass.GetRendererResource();
+	const ShaderAsset& pixShaderAssetFinalPass = global::assetSystem->Catalog()->GetShaderAsset(m_finalPassPixelShader);
+	DX11PixelShader* pixShaderFinalPass = (DX11PixelShader*)pixShaderAssetFinalPass.GetRendererResource();
+
+	//ComPtr<ID3D11InputLayout> m_finalPassinputLayout;
+	//if (auto res = m_device->CreateInputLayout(
+	//	finalPassInputElementDescs,
+	//	ARRAYSIZE(finalPassInputElementDescs),
+	//	vertShaderAssetFinalPass.blob,
+	//	vertShaderAssetFinalPass.blobSize,
+	//	&m_finalPassinputLayout); FAILED(res))
+	//{
+	//	DXERROR(res);
+	//}
+
+	//m_deviceContext->IASetInputLayout(m_finalPassinputLayout.Get());
+
+	const MeshAsset& quadMesh = global::assetSystem->Catalog()->GetMeshAsset(m_quadMesh);
+	DX11Mesh* rendererQuadMesh = (DX11Mesh*)quadMesh.GetRendererResource();
+
+	m_deviceContext->ClearRenderTargetView(m_renderTargetView.Get(), clearColor);
+
+	//m_deviceContext->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+	// @TODO: do i have to add null to the end like this to unbind prev render targets in those slots??
+	ID3D11RenderTargetView* renderTargetsFinal[] = { m_renderTargetView.Get(), nullptr, nullptr };
+
+	m_deviceContext->OMSetRenderTargets(ARRLEN(renderTargetsFinal), renderTargetsFinal, m_depthStencilView.Get());
+
+	m_deviceContext->IASetVertexBuffers(
+		0,
+		rendererQuadMesh->GetVertexBufferCount(),
+		rendererQuadMesh->GetVertexBuffer().GetAddressOf(),
+		rendererQuadMesh->GetVertexBufferStrides().data(),
+		rendererQuadMesh->GetVertexBufferOffsets().data());
+
+	m_deviceContext->IASetIndexBuffer(rendererQuadMesh->GetIndexBuffer().Get(), rendererQuadMesh->GetIndexBufferFormat(), 0);
+	m_deviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	m_deviceContext->VSSetShader(vertShaderFinalPass->Get(), nullptr, 0);
+	m_deviceContext->PSSetShader(pixShaderFinalPass->Get(), nullptr, 0);
+
+	m_deviceContext->PSSetShaderResources(0, 1, m_gbufferData.albedoSRV.GetAddressOf());
+	//m_deviceContext->PSSetShaderResources(1, 1, m_gbufferData.wsPositionSRV.GetAddressOf());
+	//m_deviceContext->PSSetShaderResources(2, 1, m_gbufferData.wsNormalSRV.GetAddressOf());
+
+	m_deviceContext->PSSetSamplers(0, 1, texture->GetSamplerState().GetAddressOf());
+
+	m_deviceContext->PSSetConstantBuffers(0, 1, m_pointLightBuffer.GetAddressOf());
+	m_deviceContext->PSSetConstantBuffers(1, 1, m_matrixBuffer.GetAddressOf());
+
+	// disable depth clip
+	//m_deviceContext->RSSetState(m_rasterState2.Get());
+
+	// @TODO: final quad isnt being drawn!!!!
+	m_deviceContext->DrawIndexed(rendererQuadMesh->GetIndexCount(), 0, 0);
+
+	// // end final pass
+
+#ifdef DX11_DEBUG
+	// log errors from our code
+	LogDebugInfo();
+#endif
+
+	m_annotation->BeginEvent(L"ImGui");
+	ImGui::Render();
+	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
+	// Update and Render additional Platform Windows
+	// if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+	{
+		ImGui::UpdatePlatformWindows();
+		ImGui::RenderPlatformWindowsDefault();
+	}
+
+	m_annotation->EndEvent();
+
+#ifdef DX11_DEBUG
+	// log errors from imgui
+	LogDebugInfo();
+#endif
+
+	VerifyGraphicsPipeline();
+
+	// end render
+	// vsync enabled
+	if (auto res = m_swapchain->Present(0, 0); FAILED(res)) {
+		DXERROR(res);
+	}
 }
 
 void DX11Context::EnumAdapters(std::vector<ComPtr<IDXGIAdapter>>& outAdapters) {
@@ -630,266 +894,6 @@ void DX11Context::ResizeSwapchainResources(u32 width, u32 height) {
 	spdlog::info("resized swapchain buffers");
 
 	ObtainSwapchainResources();
-}
-
-void DX11Context::Render(const RuntimeScene& scene)
-{
-	ImGui_ImplDX11_NewFrame();
-	ImGui_ImplGlfw_NewFrame();
-	ImGui::NewFrame();
-
-	ImGui::ShowDemoWindow();
-	// ImGui::Begin("the name", nullptr, ImGuiWindowFlags_DockNodeHost);
-	
-	// ImGui::End();
-
-	// begin render
-	// @TODO: can i just clear just before the first draw indexed?
-	const float clearColor[4] = {0.2f, 0.1f, 0.1f, 1.0f};
-	m_deviceContext->ClearRenderTargetView(m_renderTargetView.Get(), clearColor);
-
-	const float clearBlackColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-	m_deviceContext->ClearRenderTargetView(m_gbufferData.albedoRTV.Get(), clearBlackColor);
-	m_deviceContext->ClearRenderTargetView(m_gbufferData.wsPositionRTV.Get(), clearBlackColor);
-	m_deviceContext->ClearRenderTargetView(m_gbufferData.wsNormalRTV.Get(), clearBlackColor);
-	
-	m_deviceContext->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
-
-	float time = static_cast<float>(glfwGetTime());
-	float angle = DirectX::XMScalarSin(time);
-	float moveX = 0.5f * DirectX::XMScalarSin(time * 2.0f);
-	float moveY = 0.5f * DirectX::XMScalarSin(time * 2.0f);
-	auto rotMatrix = DirectX::XMMatrixRotationY(angle + DirectX::XM_PI);
-
-	auto transMatrix = DirectX::XMMatrixTranslation(moveX, moveY, 0);
-
-	DirectX::XMMATRIX modelToWorld = scene.staticMeshEntity0->xform.matrix;
-	modelToWorld = modelToWorld * rotMatrix;
-	modelToWorld = modelToWorld * transMatrix;
-
-	mat4 worldToCam = scene.camera->GetView();
-	mat4 CamToProjection = scene.camera->GetProjection();
-
-	D3D11_MAPPED_SUBRESOURCE subresource;
-	m_deviceContext->Map(m_matrixBuffer.Get(), 0, D3D11_MAP::D3D11_MAP_WRITE_DISCARD, 0, &subresource);
-	MatrixBuffer* data = reinterpret_cast<MatrixBuffer*>(subresource.pData);
-	data->ModelToWorld = DirectX::XMMatrixTranspose(modelToWorld);
-	data->WorldToView = DirectX::XMMatrixTranspose(worldToCam);
-	data->ViewToProjection = DirectX::XMMatrixTranspose(CamToProjection);
-	m_deviceContext->Unmap(m_matrixBuffer.Get(), 0);
-
-	D3D11_MAPPED_SUBRESOURCE pointSubresource;
-	m_deviceContext->Map(m_pointLightBuffer.Get(), 0, D3D11_MAP::D3D11_MAP_WRITE_DISCARD, 0, &pointSubresource);
-	PointLightBuffer* plBuffer = reinterpret_cast<PointLightBuffer*>(pointSubresource.pData);
-	plBuffer->Pos = DirectX::XMFLOAT3(1.0, 1.0f, -3);
-	plBuffer->Col = DirectX::XMFLOAT3(1.0, 1.0, 1.0);
-	m_deviceContext->Unmap(m_pointLightBuffer.Get(), 0);
-
-	// @TODO: move this to DX11Mesh?
-	D3D11_INPUT_ELEMENT_DESC inputElementDescs[] = {
-		{
-			.SemanticName = "POSITION",
-			.SemanticIndex = 0,
-			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT,
-			.InputSlot = 0,
-			.AlignedByteOffset = 0,
-			.InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
-			.InstanceDataStepRate = 0,
-		},
-		{
-			.SemanticName = "NORMAL",
-			.SemanticIndex = 0,
-			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT,
-			.InputSlot = 0,
-			.AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT,
-			.InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
-			.InstanceDataStepRate = 0,
-		},
-		{
-			.SemanticName = "COLOR",
-			.SemanticIndex = 0,
-			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT,
-			.InputSlot = 0,
-			.AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT,
-			.InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
-			.InstanceDataStepRate = 0,
-		},
-		{
-			.SemanticName = "TEXCOORD",
-			.SemanticIndex = 0,
-			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32_FLOAT,
-			.InputSlot = 0,
-			.AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT,
-			.InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
-			.InstanceDataStepRate = 0,
-		}
-	};
-
-	const ShaderAsset& vertShaderAssetSimple = global::assetSystem->Catalog()->GetShaderAsset(scene.staticMeshEntity0->vertShaderAsset);
-	DX11VertexShader* vertShaderSimple = (DX11VertexShader*) vertShaderAssetSimple.GetRendererResource();
-	const ShaderAsset& pixShaderAssetSimple = global::assetSystem->Catalog()->GetShaderAsset(scene.staticMeshEntity0->pixShaderAsset);
-	DX11PixelShader* pixShaderSimple = (DX11PixelShader*) pixShaderAssetSimple.GetRendererResource();
-
-	ComPtr<ID3D11InputLayout> m_inputLayout;
-	if (auto res = m_device->CreateInputLayout(
-		inputElementDescs, 
-		ARRAYSIZE(inputElementDescs), 
-		vertShaderAssetSimple.blob,
-		vertShaderAssetSimple.blobSize,
-		&m_inputLayout); FAILED(res)) 
-	{
-		DXERROR(res);
-	}
-
-	m_deviceContext->IASetInputLayout(m_inputLayout.Get());
-
-	const MeshAsset& meshAsset0 = global::assetSystem->Catalog()->GetMeshAsset(scene.staticMeshEntity0->meshAsset);
-	DX11Mesh* rendererMesh = (DX11Mesh*) meshAsset0.GetRendererResource();
-	
-	const TextureAsset& texAsset = global::assetSystem->Catalog()->GetTextureAsset(scene.staticMeshEntity0->texAsset);
-	DX11Texture* texture = (DX11Texture*) texAsset.GetRendererResource();
-
-	// draw mesh 1
-	m_deviceContext->IASetVertexBuffers(
-		0, 
-		rendererMesh->GetVertexBufferCount(),
-		rendererMesh->GetVertexBuffer().GetAddressOf(),
-		rendererMesh->GetVertexBufferStrides().data(),
-		rendererMesh->GetVertexBufferOffsets().data());
-
-	m_deviceContext->IASetIndexBuffer(rendererMesh->GetIndexBuffer().Get(), rendererMesh->GetIndexBufferFormat(), 0);
-
-	m_deviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	
-	m_deviceContext->VSSetShader(vertShaderSimple->Get(), nullptr, 0);
-	m_deviceContext->VSSetConstantBuffers(0, 1, m_matrixBuffer.GetAddressOf());
-
-	m_deviceContext->PSSetShader(pixShaderSimple->Get(), nullptr, 0);
-	m_deviceContext->PSSetShaderResources(0, 1, texture->GetSRV().GetAddressOf());
-	m_deviceContext->PSSetSamplers(0, 1, texture->GetSamplerState().GetAddressOf());
-	m_deviceContext->PSSetConstantBuffers(0, 1, m_pointLightBuffer.GetAddressOf());
-	m_deviceContext->PSSetConstantBuffers(1, 1, m_matrixBuffer.GetAddressOf());
-
-	ID3D11RenderTargetView* renderTargets[] = { m_gbufferData.albedoRTV.Get(), m_gbufferData.wsPositionRTV.Get(), m_gbufferData.wsNormalRTV.Get() };
-
-	//@TODO: render ws_position, ws_normal, albedo, ...
-	m_deviceContext->OMSetRenderTargets(ARRLEN(renderTargets), renderTargets, m_depthStencilView.Get());
-	m_deviceContext->RSSetState(m_rasterState.Get());
-	m_deviceContext->DrawIndexed(rendererMesh->GetIndexCount(), 0, 0);
-
-	// final pass
-	
-	// // @TODO: move this to DX11Mesh?
-	D3D11_INPUT_ELEMENT_DESC finalPassInputElementDescs[] = {
-		{
-			.SemanticName = "POSITION",
-			.SemanticIndex = 0,
-			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT,
-			.InputSlot = 0,
-			.AlignedByteOffset = 0,
-			.InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
-			.InstanceDataStepRate = 0,
-		},
-		{
-			.SemanticName = "TEXCOORD",
-			.SemanticIndex = 0,
-			.Format = DXGI_FORMAT::DXGI_FORMAT_R32G32_FLOAT,
-			.InputSlot = 0,
-			.AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT,
-			.InputSlotClass = D3D11_INPUT_CLASSIFICATION::D3D11_INPUT_PER_VERTEX_DATA,
-			.InstanceDataStepRate = 0,
-		}
-	};
-
-	 const ShaderAsset& vertShaderAssetFinalPass = global::assetSystem->Catalog()->GetShaderAsset(m_finalPassVertexShader);
-	 DX11VertexShader* vertShaderFinalPass = (DX11VertexShader*) vertShaderAssetFinalPass.GetRendererResource();
-	 const ShaderAsset& pixShaderAssetFinalPass = global::assetSystem->Catalog()->GetShaderAsset(m_finalPassPixelShader);
-	 DX11PixelShader* pixShaderFinalPass = (DX11PixelShader*) pixShaderAssetFinalPass.GetRendererResource();
-
-	ComPtr<ID3D11InputLayout> m_finalPassinputLayout;
-	if (auto res = m_device->CreateInputLayout(
-		finalPassInputElementDescs, 
-		ARRAYSIZE(finalPassInputElementDescs), 
-		vertShaderAssetFinalPass.blob,
-		vertShaderAssetFinalPass.blobSize,
-		&m_finalPassinputLayout); FAILED(res)) 
-	{
-		DXERROR(res);
-	}
-
-	m_deviceContext->IASetInputLayout(m_finalPassinputLayout.Get());
-
-	const MeshAsset& quadMesh = global::assetSystem->Catalog()->GetMeshAsset(m_quadMesh);
-	DX11Mesh* rendererQuadMesh = (DX11Mesh*) quadMesh.GetRendererResource();
-
-	// @TODO: do i have to add null to the end like this to unbind prev render targets in those slots??
-	ID3D11RenderTargetView* renderTargetsFinal[] = { m_renderTargetView.Get(), nullptr, nullptr };
-
-	m_deviceContext->OMSetRenderTargets(ARRLEN(renderTargetsFinal), renderTargetsFinal, m_depthStencilView.Get());
-
-	m_deviceContext->IASetVertexBuffers(
-		0, 
-		rendererQuadMesh->GetVertexBufferCount(),
-		rendererQuadMesh->GetVertexBuffer().GetAddressOf(),
-		rendererQuadMesh->GetVertexBufferStrides().data(),
-		rendererQuadMesh->GetVertexBufferOffsets().data());
-
-	m_deviceContext->IASetIndexBuffer(rendererQuadMesh->GetIndexBuffer().Get(), rendererQuadMesh->GetIndexBufferFormat(), 0);
-
-	m_deviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	
-	m_deviceContext->VSSetShader(vertShaderFinalPass->Get(), nullptr, 0);
-	// m_deviceContext->VSSetConstantBuffers(0, 1, m_matrixBuffer.GetAddressOf());
-
-	m_deviceContext->PSSetShader(pixShaderFinalPass->Get(), nullptr, 0);
-	
-	m_deviceContext->PSSetShaderResources(0, 1, m_gbufferData.albedoSRV.GetAddressOf());
-	//m_deviceContext->PSSetShaderResources(1, 1, m_gbufferData.wsPositionSRV.GetAddressOf());
-	//m_deviceContext->PSSetShaderResources(2, 1, m_gbufferData.wsNormalSRV.GetAddressOf());
-
-	m_deviceContext->PSSetSamplers(0, 1, texture->GetSamplerState().GetAddressOf());
-
-	m_deviceContext->PSSetConstantBuffers(0, 1, m_pointLightBuffer.GetAddressOf());
-	m_deviceContext->PSSetConstantBuffers(1, 1, m_matrixBuffer.GetAddressOf());
-
-	// disable depth clip
-	m_deviceContext->RSSetState(m_rasterState2.Get());
-
-	// @TODO: final quad isnt being drawn!!!!
-	m_deviceContext->DrawIndexed(rendererQuadMesh->GetIndexCount(), 0, 0);
-
-	// // end final pass
-
-#ifdef DX11_DEBUG
-	// log errors from our code
-	LogDebugInfo();
-#endif
-
-	m_annotation->BeginEvent(L"ImGui");
-	ImGui::Render();
-	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-
-	// Update and Render additional Platform Windows
-	// if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-	{
-		ImGui::UpdatePlatformWindows();
-		ImGui::RenderPlatformWindowsDefault();
-	}
-
-	m_annotation->EndEvent();
-
-#ifdef DX11_DEBUG
-	// log errors from imgui
-	LogDebugInfo();
-#endif
-
-	VerifyGraphicsPipeline();
-
-	// end render
-	// vsync enabled
-	if (auto res = m_swapchain->Present(0, 0); FAILED(res)) {
-		DXERROR(res);
-	}
 }
 
 void DX11Context::HandleResize(u32 width, u32 height)

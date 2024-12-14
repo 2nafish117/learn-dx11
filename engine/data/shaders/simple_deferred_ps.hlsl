@@ -16,7 +16,7 @@ struct PSOutput {
 
 uniform Texture2D albedoTex;
 
-sampler texSampler;
+uniform sampler texSampler;
 
 PSOutput PSMain(PSInput psInput)
 {

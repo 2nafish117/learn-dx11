@@ -165,13 +165,13 @@ class MeshAsset : public Asset {
 public:
 	MeshAsset(std::string_view filePath);
 	MeshAsset(
-		const std::vector<float3>& positions,
-		const std::vector<float3>& normals, 
-		const std::vector<float3>& tangents,
-		const std::vector<float3>& colors,
-		const std::vector<float2>& uv0s,
-		const std::vector<float2>& uv1s,
-		const std::vector<u32>& indices);
+		const std::vector<float3>&& positions,
+		const std::vector<float3>&& normals, 
+		const std::vector<float3>&& tangents,
+		const std::vector<float3>&& colors,
+		const std::vector<float2>&& uv0s,
+		const std::vector<float2>&& uv1s,
+		const std::vector<u32>&& indices);
 
 	virtual void Load() override;
 	virtual void Unload() override;

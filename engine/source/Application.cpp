@@ -81,7 +81,6 @@ int Application::Run()
 	glfwSetWindowSizeCallback(m_window, WindowSizeCallback);
 	glfwSetWindowUserPointer(m_window, this);
 
-
 	if (!m_window)
 	{
 		spdlog::critical("window creation failed");
